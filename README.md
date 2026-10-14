@@ -137,3 +137,27 @@ Keep sanitized screenshots, workflow logs, scan reports, deployment evidence, Fa
 
 Planning and repository initialization. No AWS infrastructure is deployed.
 
+## Local application workflow
+
+The sample FastAPI service is intentionally small: it exposes service metadata, liveness and readiness endpoints, and an in-memory task API. It is a disposable workload used to practice platform delivery and security controls, not a production application.
+
+```bash
+python -m venv .venv
+# Windows PowerShell: .venv\\Scripts\\Activate.ps1
+source .venv/bin/activate
+pip install -e ".[dev]"
+pytest
+uvicorn app.main:app --host 127.0.0.1 --port 8080
+```
+
+Useful endpoints: `/`, `/health/live`, `/health/ready`, and `/docs`.
+
+Build and run the container locally:
+
+```bash
+docker build -t secure-eks-delivery:local .
+docker run --rm -p 8080:8080 secure-eks-delivery:local
+```
+
+The Dockerfile runs as UID `10001`, rather than root. Kubernetes will later reinforce this with a security context and other workload restrictions.
+

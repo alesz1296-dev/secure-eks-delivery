@@ -1,0 +1,139 @@
+# Secure EKS Delivery Lab
+
+Hands-on DevSecOps portfolio project for delivering a small containerized web application to Amazon EKS securely, detecting vulnerabilities before release, and investigating suspicious runtime behavior.
+
+The emphasis is on learning by building: each stage is implemented, tested, documented, and then reviewed before moving on.
+
+## Goals
+
+- Provision a cost-aware AWS foundation with Terraform.
+- Deploy a containerized web application to Amazon EKS using EC2 managed nodes.
+- Apply secure Kubernetes workload defaults: non-root execution, readiness probes, resource requests and limits, and least-privilege access.
+- Build a CI pipeline with GitHub Actions that tests, builds, scans, and publishes images.
+- Scan container images with Trivy and block fixable HIGH and CRITICAL vulnerabilities.
+- Deploy immutable image digests from Amazon ECR.
+- Detect and investigate suspicious container behavior using Falco.
+- Introduce Helm for repeatable packaging and Falco installation.
+- Introduce Argo CD later for GitOps-based continuous delivery.
+
+## Architecture
+
+```text
+Developer change
+       |
+       v
+GitHub Actions: test -> build -> Trivy scan -> security gate
+       |
+       v
+Amazon ECR: versioned, immutable application image
+       |
+       v
+Amazon EKS: application workloads on EC2 managed nodes
+       |
+       +--> Falco: runtime detection and alert investigation
+
+Later: Helm packages workloads and Falco; Argo CD reconciles declared Git state to EKS.
+```
+
+## Security scope
+
+Trivy and Falco serve different purposes:
+
+| Tool | Purpose |
+| --- | --- |
+| Trivy | Finds known vulnerabilities (CVEs) in container images and dependencies before deployment. |
+| Falco | Detects suspicious behavior while containers are running. |
+
+Initial scan policy: fail the delivery pipeline for fixable HIGH and CRITICAL findings. Findings without an available fix must be reviewed and recorded as explicit exceptions.
+
+## Learning roadmap
+
+### Stage 1 — Infrastructure and application deployment
+
+- [ ] Provision VPC, ECR, IAM, and EKS with Terraform.
+- [ ] Use EC2-backed EKS managed nodes to support host-visible Falco runtime detection.
+- [ ] Build and containerize a small FastAPI or Node.js application.
+- [ ] Deploy it with a Kubernetes Deployment and Service.
+- [ ] Add a non-root container user, readiness probes, resource requests, and resource limits.
+- [ ] Verify access through `kubectl port-forward` before adding ingress or HTTPS.
+
+### Stage 2 — Secure CI delivery
+
+- [ ] Run application tests in GitHub Actions.
+- [ ] Build and scan the image with Trivy.
+- [ ] Retain the scan report as a workflow artifact.
+- [ ] Authenticate GitHub Actions to AWS through OIDC; do not store long-lived AWS keys in GitHub.
+- [ ] Publish passing images to ECR.
+- [ ] Deploy the exact image digest, not a mutable tag.
+
+### Stage 3 — Vulnerability remediation exercise
+
+- [ ] Introduce or select an older image with a fixable vulnerability.
+- [ ] Capture the failing Trivy report.
+- [ ] Update the vulnerable application dependency or base image.
+- [ ] Rebuild, rescan, and compare the reports.
+- [ ] Record the successful rollout of the patched image.
+
+### Stage 4 — Runtime detection with Helm
+
+- [ ] Install Falco using its Helm chart.
+- [ ] Generate controlled test activity in a dedicated test workload.
+- [ ] Inspect the resulting alert: rule, process, container, pod, and response.
+- [ ] Document mitigation and cleanup.
+
+### Stage 5 — GitOps with Argo CD (later)
+
+- [ ] Package the application configuration with Helm.
+- [ ] Install Argo CD and connect it to a dedicated GitOps path or repository.
+- [ ] Have CI publish artifacts and update declared image-digest state.
+- [ ] Let Argo CD reconcile that declared state to EKS.
+
+## Cost controls
+
+This is an intentional, short-lived lab. Resources must not be left running between learning sessions.
+
+- [ ] Set an AWS Budget and billing alerts before creating paid resources.
+- [ ] Use explicit Terraform feature flags for billable components, such as EKS, managed node groups, NAT gateways, ingress/load balancers, and runtime tooling.
+- [ ] Keep the default lab configuration minimal.
+- [ ] Document whether each resource is charged while it exists or only while it is used.
+- [ ] Use a teardown checklist after every lab session and verify the AWS console is clear of remaining billable resources.
+
+> Scaling application workloads down does not make an EKS cluster free. EKS control-plane charges and resources such as NAT gateways, load balancers, public IPv4 addresses, EBS volumes, and logs may continue to incur cost while they exist.
+
+## Remediation model
+
+| Vulnerability location | Expected remediation |
+| --- | --- |
+| Application dependency | Update the dependency and lockfile; test, rebuild, and rescan. |
+| Container OS package | Update the base image or package installation; rebuild and rescan. |
+| EKS worker-node OS | Update the managed node group AMI and roll nodes safely. |
+| Kubernetes component or add-on | Upgrade the component and verify version compatibility. |
+
+Application containers are rebuilt and replaced; running pods are never manually patched.
+
+## Evidence to collect
+
+The finished project will demonstrate two independent security outcomes:
+
+1. **Vulnerability remediation:** failed scan -> dependency or base-image update -> passing scan -> successful rollout.
+2. **Runtime detection:** controlled suspicious activity -> Falco alert -> investigation -> mitigation.
+
+Keep sanitized screenshots, workflow logs, scan reports, deployment evidence, Falco events, and teardown confirmation. Never commit AWS credentials, kubeconfig files, Terraform state, or sensitive account information.
+
+## Planned repository structure
+
+```text
+.
+├── app/                 # Application source and tests
+├── infra/               # Terraform infrastructure
+├── k8s/                 # Raw Kubernetes manifests during early stages
+├── helm/                # Helm charts and values (introduced later)
+├── gitops/              # Argo CD application definitions (introduced later)
+├── docs/                # Architecture, decisions, evidence, and runbooks
+└── .github/workflows/   # CI workflows
+```
+
+## Status
+
+Planning and repository initialization. No AWS infrastructure is deployed.
+

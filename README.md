@@ -18,6 +18,8 @@ The emphasis is on learning by building: each stage is implemented, tested, docu
 
 ## Architecture
 
+![Secure EKS Delivery Lab architecture](docs/architecture.png)
+
 ```text
 Developer change
        |
@@ -136,6 +138,19 @@ Keep sanitized screenshots, workflow logs, scan reports, deployment evidence, Fa
 ## Status
 
 Planning and repository initialization. No AWS infrastructure is deployed.
+
+## Task backlog
+
+Track implementation and evidence in the [project task backlog](docs/tasks.md).
+
+## Design documentation
+
+- [Architecture](docs/architecture.md)
+- [Infrastructure design guide](docs/infrastructure-design.md)
+- [Design decisions](docs/design-decisions.md)
+- [Threat model](docs/threat-model.md)
+- [Security controls: Trivy and Falco](docs/security-controls.md)
+- [Cost controls and teardown](docs/cost-controls.md)
 
 ## Local application workflow
 

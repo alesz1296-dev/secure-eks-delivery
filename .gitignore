@@ -8,6 +8,10 @@ htmlcov/
 terraform.tfstate
 terraform.tfstate.*
 .terraform/
+*.tfplan
+*.tfplan.json
+crash.log
+crash.*.log
 *.tfvars
 !*.tfvars.example
 kubeconfig

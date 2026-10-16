@@ -10,6 +10,8 @@ Deliver a small containerized FastAPI workload to Amazon EKS with infrastructure
 
 ## Target flow
 
+The editable diagram source is [`architecture.mmd`](architecture.mmd). The rendered PNG is useful for the portfolio overview; this Mermaid source is the version to update when the Terraform architecture changes.
+
 ```text
 Developer
   -> GitHub repository

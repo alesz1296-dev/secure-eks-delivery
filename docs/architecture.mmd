@@ -1,0 +1,64 @@
+%% Secure EKS Delivery Lab — target architecture
+%% Use this as the design map while implementing Terraform and Kubernetes resources.
+flowchart LR
+    developer[Developer]
+    github[GitHub Repository]
+    actions[GitHub Actions\nTest • Build • Scan]
+    trivy[Trivy\nImage vulnerability gate]
+    oidc[GitHub OIDC\nShort-lived credentials]
+    terraform[Terraform\nInfrastructure provisioning]
+
+    developer --> github
+    github --> actions
+    actions -->|test • build • scan| trivy
+    github -.->|OIDC trust| oidc
+    oidc -->|short-lived AWS credentials| terraform
+
+    subgraph aws[AWS Cloud / us-east-1]
+        direction LR
+        iam[IAM\nRoles and policies]
+        ecr[Amazon ECR\nImmutable image digest]
+
+        subgraph vpc[VPC]
+            direction LR
+            subgraph eks[Amazon EKS]
+                direction TB
+                control[Control plane]
+                subgraph nodes[EC2 Managed Node Group]
+                    direction LR
+                    app[FastAPI application\nPort 8080]
+                    falco[Falco\nRuntime detection]
+                    app --> falco
+                end
+                control --> nodes
+            end
+        end
+
+        logs[Falco logs / investigation]
+    end
+
+    terraform -.->|provisions| iam
+    terraform -.->|provisions| ecr
+    terraform -.->|provisions| vpc
+    terraform -.->|provisions| eks
+    trivy -->|passing image| ecr
+    ecr -->|approved immutable digest| app
+    falco -->|alert evidence| logs
+
+    subgraph later[Later delivery layers]
+        direction LR
+        helm[Helm\nPackage app + install Falco]
+        argocd[Argo CD\nReconcile GitOps state]
+    end
+
+    helm -.->|deploys to| eks
+    argocd -.->|reconciles| eks
+
+    classDef external fill:#f7f7f7,stroke:#333,color:#111;
+    classDef aws fill:#eef7ff,stroke:#147eba,color:#111;
+    classDef security fill:#fff0ed,stroke:#c43d2f,color:#111;
+    classDef future fill:#f7f7f7,stroke:#8295a8,stroke-dasharray:5 5,color:#111;
+    class developer,github,actions external;
+    class terraform,iam,ecr,vpc,eks,control,nodes,app aws;
+    class trivy,oidc,falco,logs security;
+    class helm,argocd future;

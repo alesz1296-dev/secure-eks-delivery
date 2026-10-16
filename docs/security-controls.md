@@ -87,6 +87,17 @@ Falco event
 - Findings must be interpreted in context and documented with evidence.
 - The initial lab does not implement automated blocking, SIEM integration, or production incident response.
 
+## Temporary network egress exception
+
+During the initial EKS networking phase, the cluster and worker-node security groups use unrestricted outbound traffic. This is a deliberate temporary lab decision so that EKS, image pulls, node updates, and AWS service integrations can be validated before the egress architecture is finalized.
+
+This is not the target production posture. The follow-up hardening work is to restrict outbound traffic through the selected egress design:
+
+- NAT Gateway routes, if internet egress is required; or
+- VPC endpoints for services such as ECR, S3, STS, and CloudWatch Logs.
+
+Until that work is complete, record the exception in reviews and do not treat unrestricted egress as an acceptable production control.
+
 ## Completion criteria
 
 The security portion of the portfolio is complete only after demonstrating both:

@@ -23,6 +23,12 @@ Developer
 Terraform provisions AWS infrastructure.
 Helm packages the application and installs Falco later.
 Argo CD reconciles declared GitOps state to EKS later.
+
+## EKS API access transition
+
+The initial AWS baseline uses private endpoint access plus a public EKS API endpoint restricted to the administrator's IP. This keeps the cluster reachable while the project is bootstrapped. Public access is temporary and must never be configured as `0.0.0.0/0`.
+
+The target design adds an SSM-managed administration host and private Systems Manager connectivity. After that path is verified, the EKS public endpoint will be disabled.
 ```
 
 ## Planned AWS components

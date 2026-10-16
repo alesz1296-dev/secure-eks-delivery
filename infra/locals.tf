@@ -17,14 +17,4 @@ locals {
     "kubernetes.io/role/internal-elb"             = "1"
     "kubernetes.io/cluster/${local.cluster_name}" = "shared"
   }
-
-  private_subnet_cidrs = [
-    for index, az in var.availability_zones :
-    cidrsubnet(var.vpc_cidr, 8, index)
-  ]
-
-  private_subnet_names = {
-    for index, az in var.availability_zones :
-    az => "${local.name_prefix}-${az}-private"
-  }
 }

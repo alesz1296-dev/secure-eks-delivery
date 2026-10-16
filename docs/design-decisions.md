@@ -44,3 +44,17 @@ This document records meaningful choices and their rationale. Update an entry wh
 
 **Rationale:** They address different stages of risk. A clean Trivy result does not prove runtime safety, and a Falco alert does not replace vulnerability management.
 
+## D-008: Temporarily allow unrestricted security-group egress
+
+**Decision:** The initial EKS cluster and worker-node security groups allow outbound traffic while the lab networking foundation is validated.
+
+**Rationale:** This avoids blocking the first EKS deployment on an incomplete NAT or VPC-endpoint design. It is a temporary exception, not a production recommendation. Later hardening must restrict egress through NAT Gateway routes or VPC endpoints and verify that ECR, S3, STS, logging, and node-update workflows still function.
+
+## D-009: Use a restricted public EKS endpoint during bootstrap
+
+**Decision:** The initial AWS baseline enables both private and public API endpoint access. Public access must be restricted to the administrator's current public IP using `public_access_cidrs`.
+
+**Rationale:** A private-only endpoint requires an administration path before `kubectl` can reach the cluster. The project will later provision an SSM-managed administration host and private Systems Manager connectivity. Once that path is implemented and verified, public endpoint access will be disabled.
+
+**Target state:** `Laptop -> SSM Session Manager -> private administration host -> private EKS API`
+

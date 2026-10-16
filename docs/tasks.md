@@ -35,6 +35,23 @@ Use this checklist to track hands-on work. Mark an item complete only after it i
 - [ ] Run and document controlled Falco shell and sensitive-file-write detection exercises.
 - [ ] Record the investigation and mitigation for each Falco exercise.
 
+## Network security hardening
+
+- [ ] Review the temporary unrestricted outbound rules on the EKS cluster and worker-node security groups.
+- [ ] Choose the final egress design: NAT Gateway, VPC endpoints, or a documented combination.
+- [ ] Add only the required NAT routes or endpoint security-group rules.
+- [ ] Restrict worker-node and control-plane egress and verify ECR pulls, S3 access, STS, logging, and node updates.
+- [ ] Capture a Terraform plan and connectivity evidence proving the restricted design works.
+
+## Private EKS administration path
+
+- [ ] Provision an SSM-managed administration host in a private subnet.
+- [ ] Choose and implement SSM connectivity through NAT or Systems Manager interface endpoints.
+- [ ] Verify Session Manager access without SSH or inbound security-group rules.
+- [ ] Verify `kubectl` access to the private EKS endpoint from the administration host.
+- [ ] Disable EKS public endpoint access after private administration is proven.
+- [ ] Remove the temporary public endpoint CIDR configuration from the baseline.
+
 ## Later platform tasks
 
 - [ ] Define Kubernetes `securityContext` settings, including `runAsNonRoot` and `readOnlyRootFilesystem`.

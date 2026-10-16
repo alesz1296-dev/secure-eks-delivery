@@ -89,3 +89,109 @@ variable "cleanup_deadline" {
   }
 }
 
+variable "enable_aws_load_balancer_controller" {
+  description = "Enable or disable the creation of AWS Load Balancer Controller."
+  type        = bool
+  default     = false
+}
+
+variable "enable_node_group" {
+  description = "Enable or disable EKS managed node groups."
+  type        = bool
+  default     = false
+}
+
+#networking variables
+variable "protocol" {
+  description = "The protocol for security group rules."
+  type        = string
+  default     = "tcp"
+}
+
+variable "kubernetes_api_port" {
+  description = "The Kubernetes API port for security group rules."
+  type        = number
+  default     = 443
+}
+variable "cluster_to_node_from_port" {
+  description = "Lowest TCP port allowed from the EKS control plane to worker nodes."
+  type        = number
+  default     = 1025
+}
+
+variable "cluster_to_node_to_port" {
+  description = "Highest TCP port allowed from the EKS control plane to worker nodes."
+  type        = number
+  default     = 65535
+
+}
+
+#ECR variables
+variable "ecr_force_delete" {
+  description = "Force delete ECR resources even if images exist."
+  type        = bool
+  default     = false
+}
+
+#EKS variables
+variable "eks_version" {
+  description = "Kubernetes version for EKS."
+  type        = string
+  default     = "1.36" #EKS standard version as of 2026-10-16
+}
+
+
+variable "eks_public_access_cidrs" {
+  description = "CIDR ranges allowed to access the public EKS API endpoint."
+  type        = list(string)
+  default     = []
+}
+
+variable "eks_service_ipv4_cidr" {
+  description = "Kubernetes Service CIDR. Must not overlap the VPC or connected networks."
+  type        = string
+  default     = "172.20.0.0/16"
+
+  validation {
+    condition     = can(cidrhost(var.eks_service_ipv4_cidr, 0))
+    error_message = "eks_service_ipv4_cidr must be a valid IPv4 CIDR block."
+  }
+}
+
+#EKS Node Group variables
+variable "eks_node_instance_types" {
+  type    = list(string)
+  default = ["t3.small"]
+}
+
+variable "eks_node_capacity_type" {
+  description = "EC2 capacity type for EKS nodes."
+  type        = string
+  default     = "ON_DEMAND"
+}
+
+variable "eks_node_ami_type" {
+  description = "AMI type for EKS managed nodes."
+  type        = string
+  default     = "AL2023_x86_64_STANDARD"
+}
+
+variable "eks_node_disk_size" {
+  type    = number
+  default = 20
+}
+
+variable "eks_node_desired_size" {
+  type    = number
+  default = 1
+}
+
+variable "eks_node_min_size" {
+  type    = number
+  default = 1
+}
+
+variable "eks_node_max_size" {
+  type    = number
+  default = 2
+}

@@ -48,7 +48,11 @@ resource "aws_eks_node_group" "main" {
   instance_types = var.eks_node_instance_types
   capacity_type  = var.eks_node_capacity_type
   ami_type       = var.eks_node_ami_type
-  disk_size      = var.eks_node_disk_size
+
+  launch_template {
+    id      = aws_launch_template.eks_nodes.id
+    version = aws_launch_template.eks_nodes.latest_version
+  }
 
   scaling_config {
     desired_size = var.eks_node_desired_size
@@ -69,3 +73,5 @@ resource "aws_eks_node_group" "main" {
     Role = "eks-worker-nodes"
   })
 }
+
+

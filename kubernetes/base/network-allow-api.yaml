@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api
+  namespace: secure-eks-delivery
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: secure-eks-delivery
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: secure-eks-delivery
+          podSelector:
+            matchLabels:
+              access: api-client
+      ports:
+        - protocol: TCP
+          port: 8080
+
+# Allows port 8080 only from explicitly labelled client pods in the same namespace.

@@ -1,10 +1,9 @@
-.git
-.github
-.venv
-.pytest_cache
-__pycache__
-tests
-*.tfstate
-*.tfvars
-README.md
-
+# Send only the application source and dependency manifest to Docker.
+# This prevents local credentials, Terraform state, cluster configuration,
+# test artifacts, and unrelated repository files from entering the build context.
+*
+!pyproject.toml
+!requirements.lock
+!app/
+!app/**
+!requirements.lock

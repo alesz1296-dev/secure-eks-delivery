@@ -53,6 +53,30 @@ Source change
 - Passing scan report after the remediation.
 - ECR image digest and deployment evidence proving the passing image was deployed.
 
+### Baseline finding: pinned Python base image
+
+The following baseline was captured before remediation while scanning the selected
+`python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258`
+base image. It is intentionally retained as vulnerability-management evidence;
+it is not an approved exception or a release decision.
+
+| Component | Installed version | Finding | Severity | Fixed version reported by Trivy | Initial disposition |
+| --- | --- | --- | --- | --- | --- |
+| `pip` | `25.0.1` | CVE-2025-8869 | Medium | `25.3` | Test a newer pinned Python base-image digest. |
+| `pip` | `25.0.1` | CVE-2026-13346 | Medium | `26.2.0` | Test a newer pinned Python base-image digest. |
+| `pip` | `25.0.1` | CVE-2026-3219 | Medium | `26.1` | Test a newer pinned Python base-image digest. |
+| `pip` | `25.0.1` | CVE-2026-6357 | Medium | No fix reported | Reassess after completing the locked-dependency and final-runtime-image work; do not suppress silently. |
+| `pip` | `25.0.1` | CVE-2026-8643 | Medium | `26.1.2` | Test a newer pinned Python base-image digest. |
+| `pip` | `25.0.1` | CVE-2026-1703 | Low | `26.0` | Test a newer pinned Python base-image digest. |
+
+**Baseline summary:** 6 findings (5 Medium, 1 Low; 0 High, 0 Critical).
+
+The next action is not an in-place `pip` upgrade. First complete the reproducible
+dependency workflow and build the final runtime image, then scan a newer candidate
+base-image digest and the finished application image. The application does not need
+`pip` at runtime, so the final-image design should avoid retaining unnecessary
+package-management tooling where practical.
+
 ## Falco: runtime detection
 
 ### Planned deployment

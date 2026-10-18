@@ -58,3 +58,28 @@ This document records meaningful choices and their rationale. Update an entry wh
 
 **Target state:** `Laptop -> SSM Session Manager -> private administration host -> private EKS API`
 
+## D-010: Demonstrate a complete DevSecOps security lifecycle
+
+**Decision:** The project will include prevention, pre-deployment detection, runtime detection, incident investigation, remediation, and retained evidence rather than only provisioning infrastructure.
+
+**Rationale:** The portfolio should demonstrate why each control exists and how a finding is handled. The implementation sequence and evidence expectations are maintained in the [DevSecOps Security Roadmap](devsecops-roadmap.md).
+
+## D-011: Use VPC endpoints for private node egress
+
+**Decision:** Use VPC endpoints as the egress design for private EKS nodes. The project will not use a hybrid NAT Gateway plus endpoint design.
+
+The first endpoint set will cover:
+
+- S3 Gateway Endpoint
+- ECR API Interface Endpoint
+- ECR DKR Interface Endpoint
+- STS Interface Endpoint
+
+CloudWatch Logs and Systems Manager endpoints will be added when those capabilities are enabled.
+
+**Rationale:** VPC endpoints keep AWS service traffic on the AWS network, make the permitted service boundary explicit, and support the project's security-learning goals. They also avoid introducing NAT Gateway hourly and data-processing charges during the first private-node milestone.
+
+**Trade-off:** Interface endpoints add resources, endpoint security groups, private DNS requirements, and their own hourly/data-processing costs. Workloads requiring general internet access, external package repositories, or external APIs are outside this private-egress baseline and would require a separately reviewed architecture decision.
+
+The endpoint security group currently relies on implicit default outbound behavior during the lab phase. This is a temporary exception to be replaced with explicit, least-privilege egress rules after endpoint connectivity is verified.
+

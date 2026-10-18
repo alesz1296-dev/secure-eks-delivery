@@ -2,6 +2,8 @@
 
 Use this checklist to track hands-on work. Mark an item complete only after it is implemented, verified, and its evidence is saved where relevant.
 
+The ordered security program is documented in [DevSecOps Security Roadmap](devsecops-roadmap.md).
+
 ## Docker hardening — revisit before the first ECR push
 
 - [ ] Replace the single-stage Dockerfile with separate `builder` and `runtime` stages.
@@ -35,6 +37,29 @@ Use this checklist to track hands-on work. Mark an item complete only after it i
 - [ ] Run and document controlled Falco shell and sensitive-file-write detection exercises.
 - [ ] Record the investigation and mitigation for each Falco exercise.
 
+## Identity and pipeline security
+
+- [ ] Create a GitHub OIDC provider and a repository- and environment-scoped deployment role.
+- [ ] Do not use long-lived AWS access keys in GitHub Actions.
+- [ ] Set minimum `GITHUB_TOKEN` permissions per workflow and job.
+- [ ] Pin third-party GitHub Actions to full commit SHAs.
+- [ ] Keep untrusted pull-request code away from deployment credentials and privileged runners.
+- [ ] Add Gitleaks secret detection and Checkov Terraform scanning.
+- [ ] Add CodeQL or Semgrep source-code scanning after the base pipeline is stable.
+- [ ] Configure protected deployment environments and record the approval path.
+
+## Kubernetes workload security
+
+- [ ] Add `runAsNonRoot`, dropped Linux capabilities, `allowPrivilegeEscalation: false`, and a read-only root filesystem where compatible.
+- [ ] Define and enforce a Pod Security Admission baseline or restricted policy.
+- [ ] Add NetworkPolicies and demonstrate that unauthorized pod-to-pod traffic is denied.
+- [ ] Define Kubernetes RBAC roles using least privilege.
+- [ ] Add an SBOM and retain it with the image build evidence.
+- [ ] Review application authorization and test that unauthorized actions are denied.
+- [ ] Evaluate CloudTrail and GuardDuty for a controlled cloud-security exercise.
+- [ ] Record dependency provenance from source lockfile to image digest.
+- [ ] Evaluate artifact signing and verification as an optional supply-chain enhancement.
+
 ## Network security hardening
 
 - [ ] Review the temporary unrestricted outbound rules on the EKS cluster and worker-node security groups.
@@ -42,6 +67,7 @@ Use this checklist to track hands-on work. Mark an item complete only after it i
 - [ ] Add only the required NAT routes or endpoint security-group rules.
 - [ ] Restrict worker-node and control-plane egress and verify ECR pulls, S3 access, STS, logging, and node updates.
 - [ ] Capture a Terraform plan and connectivity evidence proving the restricted design works.
+- [ ] Replace implicit endpoint-security-group egress with explicit, least-privilege rules and verify ECR, STS, and EC2 endpoint connectivity.
 
 ## Private EKS administration path
 
@@ -54,9 +80,6 @@ Use this checklist to track hands-on work. Mark an item complete only after it i
 
 ## Later platform tasks
 
-- [ ] Define Kubernetes `securityContext` settings, including `runAsNonRoot` and `readOnlyRootFilesystem`.
-- [ ] Add Kubernetes liveness and readiness probes using the existing health endpoints.
 - [ ] Add resource requests and limits.
 - [ ] Package the workload as a Helm chart.
-- [ ] Deploy Falco through Helm and document a controlled detection exercise.
 - [ ] Introduce Argo CD only after the Helm deployment path is understood and verified.

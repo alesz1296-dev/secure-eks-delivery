@@ -21,7 +21,7 @@ resource "aws_eks_cluster" "main" {
   enabled_cluster_log_types = [
     "api",
     "audit",
-    "authenticator"#,
+    "authenticator" #,
     #"scheduler",
     #"controllerManager"
   ]
@@ -38,7 +38,7 @@ resource "aws_eks_cluster" "main" {
 }
 
 resource "aws_eks_node_group" "main" {
-  count = var.enable_eks_node_groups && var.enable_eks ? 1 : 0
+  count = var.enable_eks_node_group && var.enable_eks ? 1 : 0
 
   cluster_name    = aws_eks_cluster.main[0].name
   node_group_name = "${local.cluster_name}-nodes"

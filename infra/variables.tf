@@ -54,7 +54,7 @@ variable "enable_eks" {
   default     = false
 }
 
-variable "enable_eks_node_groups" {
+variable "enable_eks_node_group" {
   description = "Enable or disable the creation of EKS node groups."
   type        = bool
   default     = false
@@ -95,11 +95,6 @@ variable "enable_aws_load_balancer_controller" {
   default     = false
 }
 
-variable "enable_node_group" {
-  description = "Enable or disable EKS managed node groups."
-  type        = bool
-  default     = false
-}
 
 #networking variables
 variable "protocol" {
@@ -195,3 +190,23 @@ variable "eks_node_max_size" {
   type    = number
   default = 2
 }
+
+#endpoints variables
+
+variable "vpc_endpoint_subnet_ids" {
+  type    = list(string)
+  default = []
+}
+
+
+variable "vpc_endpoint_from_port" {
+  description = "The lowest port for VPC endpoint security group rules."
+  type        = number
+  default     = 443
+}
+
+variable "vpc_endpoint_to_port" {
+  description = "The highest port for VPC endpoint security group rules."
+  type        = number
+  default     = 443
+} 

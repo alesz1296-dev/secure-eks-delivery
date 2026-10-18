@@ -18,9 +18,14 @@ This is a learning-lab threat model for the project application, CI pipeline, re
 | Threat | Planned control | Evidence |
 | --- | --- | --- |
 | Stolen long-lived CI credentials | GitHub OIDC with a least-privilege IAM role | IAM trust and permission policy review |
+| Over-permissive or compromised CI workflow | Minimal `GITHUB_TOKEN` permissions, SHA-pinned actions, protected environments, and no deployment secrets for untrusted PRs | Workflow review and blocked unsafe test |
+| Exposed credential in source | Gitleaks gate and credential rotation procedure | Failing scan and remediation record |
+| Unsafe Terraform change | Checkov gate plus reviewed Terraform plan | Failing check and reviewed plan artifact |
 | Vulnerable dependency or OS package | Trivy security gate; dependency/base-image remediation | Before/after scan reports |
 | Mutable or substituted image | ECR plus deployment by immutable digest | CI log and deployed manifest |
 | Container runs as root | Non-root Docker user and Kubernetes `runAsNonRoot` | Dockerfile and pod security context |
+| Privileged or overly capable pod | Pod Security Admission, Kyverno policy, dropped capabilities, and no privilege escalation | Rejected workload evidence |
+| Unauthorized pod-to-pod traffic | Kubernetes NetworkPolicies | Denied connectivity test |
 | Resource exhaustion | Kubernetes resource requests and limits | Deployment manifest and `kubectl` output |
 | Suspicious shell/process/file activity | Falco on EC2-backed nodes | Controlled alert and investigation notes |
 | Exposed application endpoint | Start with port-forward; defer ingress | Deployment configuration and access test |
@@ -28,7 +33,7 @@ This is a learning-lab threat model for the project application, CI pipeline, re
 
 ## Explicit non-goals for the first iteration
 
-- Public internet exposure
+- Public application exposure through ingress/load balancers
 - Production data
 - Automated incident response actions
 - Multi-region availability

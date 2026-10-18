@@ -12,6 +12,8 @@ Deliver a small containerized FastAPI workload to Amazon EKS with infrastructure
 
 The editable diagram source is [`architecture.mmd`](architecture.mmd). The rendered PNG is useful for the portfolio overview; this Mermaid source is the version to update when the Terraform architecture changes.
 
+The private egress and endpoint security-group relationships are illustrated in [`private-eks-egress-diagram.png`](private-eks-egress-diagram.png).
+
 ```text
 Developer
   -> GitHub repository
@@ -23,24 +25,26 @@ Developer
 Terraform provisions AWS infrastructure.
 Helm packages the application and installs Falco later.
 Argo CD reconciles declared GitOps state to EKS later.
+```
 
 ## EKS API access transition
 
 The initial AWS baseline uses private endpoint access plus a public EKS API endpoint restricted to the administrator's IP. This keeps the cluster reachable while the project is bootstrapped. Public access is temporary and must never be configured as `0.0.0.0/0`.
 
 The target design adds an SSM-managed administration host and private Systems Manager connectivity. After that path is verified, the EKS public endpoint will be disabled.
-```
 
 ## Planned AWS components
 
 | Component                | Purpose                                             | Status  |
 | ------------------------ | --------------------------------------------------- | ------- |
-| VPC and private subnets  | Network boundary for cluster resources              | Planned |
-| Amazon ECR               | Private image registry                              | Planned |
-| IAM and GitHub OIDC role | Short-lived CI authentication to AWS                | Planned |
-| Amazon EKS               | Managed Kubernetes control plane                    | Planned |
-| EC2 managed node group   | Runs the application and Falco with host visibility | Planned |
-| CloudWatch Logs          | Controlled, time-limited operational logs           | Planned |
+| VPC and private subnets  | Network boundary for cluster resources              | Terraform complete; not applied |
+| Security groups          | Cluster and worker traffic boundaries               | Terraform complete; not applied |
+| Amazon ECR               | Private image registry                              | Terraform complete; not applied |
+| IAM roles                | EKS and node permissions                            | Terraform complete; not applied |
+| GitHub OIDC role         | Short-lived CI authentication to AWS                | Planned |
+| Amazon EKS               | Managed Kubernetes control plane                    | Terraform complete; not applied |
+| EC2 managed node group   | Runs the application and Falco with host visibility | Terraform complete; egress pending |
+| CloudWatch Logs          | EKS-managed control-plane log destination           | EKS configured; retention review pending |
 
 ## Trust boundaries
 
@@ -57,7 +61,7 @@ The target design adds an SSM-managed administration host and private Systems Ma
 | Repeatable packaging  | Helm                                  |
 | GitOps reconciliation | Argo CD                               |
 
-Ingress, public exposure, and HTTPS are intentionally deferred. Initial application access uses `kubectl port-forward`.
+Ingress, public application exposure, and HTTPS are intentionally deferred. Initial application access uses `kubectl port-forward`. The EKS API has temporary restricted public access for administration; this is separate from public application exposure.
 
 ## Security-control lifecycle
 

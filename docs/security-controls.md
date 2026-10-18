@@ -1,8 +1,10 @@
-# Security Controls: Trivy and Falco
+# Security Controls: Delivery and Runtime
 
 ## Purpose
 
-This project demonstrates two complementary security practices:
+This project uses layered security controls. Trivy and Falco remain the first two runtime-delivery controls, while GitHub OIDC, Gitleaks, Checkov, CodeQL or Semgrep, Kyverno, Kubernetes RBAC, and NetworkPolicies are introduced in staged iterations described in the [DevSecOps Security Roadmap](devsecops-roadmap.md).
+
+This document demonstrates two complementary security practices:
 
 1. **Prevent vulnerable software from reaching EKS** with Trivy image scanning.
 2. **Detect suspicious behavior after deployment** with Falco runtime monitoring.
@@ -98,10 +100,16 @@ This is not the target production posture. The follow-up hardening work is to re
 
 Until that work is complete, record the exception in reviews and do not treat unrestricted egress as an acceptable production control.
 
+The VPC interface-endpoint security group currently also relies on the default outbound behavior. This is a temporary lab exception: endpoint ENIs must be able to return traffic for the AWS services they expose. The hardening phase must replace the implicit rule with an explicit, reviewed egress policy and verify that ECR, STS, and EC2 API calls continue to work.
+
 ## Completion criteria
 
-The security portion of the portfolio is complete only after demonstrating both:
+Trivy and Falco are the first security milestone. The full DevSecOps scope is complete only after demonstrating:
 
 1. **Vulnerability remediation:** failing Trivy result -> fix -> passing result -> successful deployment by digest.
 2. **Runtime detection:** controlled suspicious activity -> Falco alert -> documented investigation and mitigation.
+3. **Identity and pipeline protection:** GitHub OIDC trust conditions, least-privilege permissions, SHA-pinned actions, Gitleaks, and Checkov evidence.
+4. **Kubernetes prevention:** non-root/security-context controls, Pod Security Admission or Kyverno rejection evidence, RBAC review, and a denied NetworkPolicy test.
+5. **Cloud detection and response:** EKS audit logs plus a documented CloudTrail/GuardDuty or equivalent simulated-event investigation.
+6. **Supply-chain traceability:** SBOM and source-to-image-to-deployment evidence; signing is a later enhancement if selected.
 

@@ -2,8 +2,22 @@
 # This prevents local credentials, Terraform state, cluster configuration,
 # test artifacts, and unrelated repository files from entering the build context.
 *
+
+# Explicitly document sensitive and local-only paths that must never enter the context.
+.env*
+.aws/
+kubeconfig*
+*.pem
+*.key
+.terraform/
+*.tfstate
+*.tfstate.*
+docker-build.log
+trivy-*.json
+diagrams/
+
+# Re-include only the files required by the image build.
 !pyproject.toml
 !requirements.lock
 !app/
 !app/**
-!requirements.lock

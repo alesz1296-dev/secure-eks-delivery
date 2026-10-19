@@ -6,29 +6,54 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 
 ## Docker hardening — revisit before the first ECR push
 
-- [ ] Replace the single-stage Dockerfile with separate `builder` and `runtime` stages.
-- [ ] Build the application and dependencies into `/opt/venv` in the builder stage.
-- [ ] Copy only the virtual environment into the runtime image; do not retain build tooling or source-build artifacts.
+- [x] Replace the single-stage Dockerfile with separate `builder` and `runtime` stages.
+- [x] Build the application and dependencies into `/opt/venv` in the builder stage.
+- [x] Copy only the virtual environment into the runtime image; do not retain build tooling or source-build artifacts.
 - [ ] Correct the package build/install order: copy the application package before building/installing it.
-- [ ] Keep the runtime process as non-root UID/GID `10001`.
-- [ ] Create the runtime user without a writable home directory unless the application specifically needs one.
-- [ ] Verify the runtime application directory is not writable by the application user.
-- [ ] Confirm the container starts and serves `/health/live` on port `8080`.
+- [x] Keep the runtime process as non-root UID/GID `10001`.
+- [x] Create the runtime user without a writable home directory unless the application specifically needs one.
+- [x] Verify the runtime application directory is not writable by the application user.
+- [x] Confirm the container starts and serves `/health/live` on port `8080`.
 - [ ] Expand `.dockerignore` to exclude `.env`, `.aws/`, `kubeconfig`, `*.pem`, `*.key`, `.terraform/`, Terraform state, and local-only evidence assets.
-- [ ] Pin build tools and introduce a reproducible dependency-lock strategy with exact transitive versions and hashes.
-- [ ] Pin the Python base image by digest after establishing the Trivy scan workflow.
-- [ ] Build the image locally and record its image digest.
-- [ ] Scan the image with Trivy and record the baseline findings.
-- [ ] Fix at least one deliberately selected, fixable dependency or base-image vulnerability and compare scan reports.
+- [ ] Pin build tools and introduce a reproducible dependency-lock strategy with exact transitive versions and hashes. The runtime lock is complete; builder `pip`/`setuptools` versions still need an explicit policy.
+- [x] Pin the Python base image by digest after establishing the Trivy scan workflow.
+- [x] Build the image locally and record its image digest.
+- [x] Scan the image with Trivy and record the baseline findings.
+- [x] Fix at least one deliberately selected, fixable dependency or base-image vulnerability and compare scan reports.
 
 ## Container verification evidence
 
-- [ ] Save the successful local build command and output.
-- [ ] Save the output proving the running container user is not root.
-- [ ] Save the liveness endpoint response.
-- [ ] Save the initial Trivy report and the remediated report.
+- [x] Save the successful local build command and output.
+- [x] Save the output proving the running container user is not root.
+- [x] Save the liveness endpoint response.
+- [x] Save the initial Trivy report and the remediated report.
+
+## Validated infrastructure and local baseline
+
+- [x] Define and validate the Terraform VPC, private subnets, route tables, tags, and outputs.
+- [x] Define and validate ECR, IAM roles, security groups, VPC endpoints, EKS control-plane, managed node group, and launch-template resources.
+- [x] Keep EKS creation and other cost-incurring resources disabled until the local path is proven.
+- [x] Create the local kind cluster and validate Cilium networking.
+- [x] Deploy the FastAPI workload, ServiceAccount, ClusterIP Service, probes, and Kustomize base.
+
+## Supply-chain reproducibility
+
+- [x] Replace the mutable Python base-image tag with a human-readable version tag pinned by digest.
+- [x] Build the image for the intended runtime architecture (`linux/amd64` for the initial EKS node group) and record the selected base-image digest.
+- [x] Scan the candidate base image with Trivy before accepting or updating its digest.
+- [ ] Define an intentional base-image update cadence and retain scan evidence for each update.
+- [x] Generate and commit a transitive Python dependency lock file with hashes.
+- [x] Configure the Docker build to install runtime dependencies using `pip --require-hashes` from the committed lock file.
+- [x] Ensure the image build does not resolve unpinned dependencies at build time.
+- [ ] Automate lock-file refreshes through a reviewed dependency-update workflow and rescan the rebuilt image.
 
 ## Security delivery and runtime detection
+
+## Open vulnerability risks
+
+- [x] Temporarily accept the remaining 44 Debian 13.7 findings for local-only baseline validation, with expiry at the first ECR/EKS deployment gate. Retain severity, reachability, and `will_not_fix` evidence for the later production decision.
+- [ ] Investigate the four grouped Python findings reported only through third-party SBOM metadata (`msgpack 1.1.2`, `setuptools 70.3.0`, and `urllib3 2.7.0`). They are not present in the final runtime filesystem; preserve the Trivy report and verify the SBOM provenance before changing application dependencies.
+- [x] Record the selected pinned Trixie digest and the before/after scan comparison in `docs/vulnerability-baseline.md`.
 
 - [ ] Define and document the Trivy gate: fail on fixable HIGH and CRITICAL findings.
 - [ ] Retain Trivy reports as GitHub Actions artifacts.
@@ -50,15 +75,32 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 
 ## Kubernetes workload security
 
-- [ ] Add `runAsNonRoot`, dropped Linux capabilities, `allowPrivilegeEscalation: false`, and a read-only root filesystem where compatible.
-- [ ] Define and enforce a Pod Security Admission baseline or restricted policy.
-- [ ] Add NetworkPolicies and demonstrate that unauthorized pod-to-pod traffic is denied.
+- [x] Add `runAsNonRoot`, dropped Linux capabilities, `allowPrivilegeEscalation: false`, and a read-only root filesystem where compatible.
+- [x] Define and enforce a Pod Security Admission baseline or restricted policy.
+- [x] Add NetworkPolicies and demonstrate that unauthorized pod-to-pod traffic is denied.
 - [ ] Define Kubernetes RBAC roles using least privilege.
 - [ ] Add an SBOM and retain it with the image build evidence.
 - [ ] Review application authorization and test that unauthorized actions are denied.
 - [ ] Evaluate CloudTrail and GuardDuty for a controlled cloud-security exercise.
 - [ ] Record dependency provenance from source lockfile to image digest.
 - [ ] Evaluate artifact signing and verification as an optional supply-chain enhancement.
+
+## Local Kubernetes hardening follow-up
+
+- [ ] Add a namespace `ResourceQuota` for aggregate CPU, memory, Pod, and persistent-volume claims.
+- [ ] Add a namespace `LimitRange` that supplies safe default resource requests and limits for future workloads.
+- [x] Keep the local kind node image and Cilium chart version pinned and document their upgrade procedure.
+- [ ] Create a Kubernetes overlay for EKS that replaces the local image and `imagePullPolicy: Never` with an ECR image digest.
+
+## RBAC and label-governance exercise
+
+- [ ] Prove that the application ServiceAccount cannot list Pods, read Secrets, create workloads, or access cluster-scoped resources.
+- [ ] Record `kubectl auth can-i` evidence for the application ServiceAccount.
+- [ ] Define a least-privilege Role and RoleBinding only if the application gains a genuine Kubernetes API requirement.
+- [ ] Ensure GitHub Actions, Argo CD, and human operators use distinct identities and minimal namespace-scoped permissions.
+- [ ] Do not grant `cluster-admin` to application, CI, or GitOps identities.
+- [ ] Add a Kyverno policy or Kubernetes ValidatingAdmissionPolicy restricting use of `access=api-client` to approved ServiceAccounts or workloads.
+- [ ] Demonstrate that an unauthorized workload carrying `access=api-client` is rejected by the admission policy.
 
 ## Network security hardening
 

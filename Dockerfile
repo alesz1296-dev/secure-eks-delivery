@@ -1,4 +1,6 @@
-ARG PYTHON_IMAGE=python:3.12-slim-bookworm@sha256:34386ef0cb081344d7ec1c103ba398e6e9f64e9ab3a1509accc92a4e24a07258
+# trixie image
+ARG PYTHON_IMAGE=python:3.12-slim-trixie@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1 
+
 
 # Build stage: Install dependencies and build the application in a virtual environment.
 FROM ${PYTHON_IMAGE} AS builder
@@ -10,8 +12,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# pinned puo and setuptools versions to avoid issues with newer versions
 RUN python -m venv /opt/venv \
-    && /opt/venv/bin/pip install --no-cache-dir --upgrade pip setuptools
+    && /opt/venv/bin/pip install \
+      --no-cache-dir \
+      --upgrade \
+      pip==26.2.1 \
+      setuptools==84.2.0
 
 # Copy the lock file separately for Docker layer caching.
 COPY requirements.lock ./
@@ -24,6 +31,8 @@ RUN /opt/venv/bin/pip install \
 
 # Runtime stage: Use a minimal image with only the virtual environment and application code.
 FROM ${PYTHON_IMAGE} AS runtime
+
+RUN /usr/local/bin/python -m pip uninstall --yes pip
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

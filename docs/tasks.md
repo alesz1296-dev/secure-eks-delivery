@@ -9,13 +9,13 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 - [x] Replace the single-stage Dockerfile with separate `builder` and `runtime` stages.
 - [x] Build the application and dependencies into `/opt/venv` in the builder stage.
 - [x] Copy only the virtual environment into the runtime image; do not retain build tooling or source-build artifacts.
-- [ ] Correct the package build/install order: copy the application package before building/installing it.
+- [x] Keep the runtime image installation order explicit: install locked dependencies in the builder, then copy the application source into the runtime image.
 - [x] Keep the runtime process as non-root UID/GID `10001`.
 - [x] Create the runtime user without a writable home directory unless the application specifically needs one.
 - [x] Verify the runtime application directory is not writable by the application user.
 - [x] Confirm the container starts and serves `/health/live` on port `8080`.
-- [ ] Expand `.dockerignore` to exclude `.env`, `.aws/`, `kubeconfig`, `*.pem`, `*.key`, `.terraform/`, Terraform state, and local-only evidence assets.
-- [ ] Pin build tools and introduce a reproducible dependency-lock strategy with exact transitive versions and hashes. The runtime lock is complete; builder `pip`/`setuptools` versions still need an explicit policy.
+- [x] Expand `.dockerignore` to exclude `.env`, `.aws/`, `kubeconfig`, `*.pem`, `*.key`, `.terraform/`, Terraform state, and local-only evidence assets.
+- [x] Pin builder `pip`/`setuptools` versions and use the reproducible dependency lock with exact transitive versions and hashes.
 - [x] Pin the Python base image by digest after establishing the Trivy scan workflow.
 - [x] Build the image locally and record its image digest.
 - [x] Scan the image with Trivy and record the baseline findings.
@@ -57,9 +57,12 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 
 - [ ] Define and document the Trivy gate: fail on fixable HIGH and CRITICAL findings.
 - [ ] Retain Trivy reports as GitHub Actions artifacts.
-- [ ] Configure deployment to use the scanned ECR image digest.
-- [ ] Install Falco using Helm after the workload is stable.
-- [ ] Run and document controlled Falco shell and sensitive-file-write detection exercises.
+- [x] Configure deployment to use the scanned ECR image digest and verify the running workload.
+- [x] Install Falco using Helm after the workload is stable.
+- [x] Run and document a controlled Falco interactive-shell detection exercise.
+- [ ] Evaluate Falco Talon for narrowly scoped automated responses after detection-only testing is complete.
+- [ ] Integrate Falco alerts with Falcosidekick and AWS SNS using workload identity rather than static AWS credentials.
+- [ ] Evaluate email notification through SES via a controlled Lambda or SMTP integration; do not send directly from application containers.
 - [ ] Record the investigation and mitigation for each Falco exercise.
 
 ## Identity and pipeline security
@@ -78,7 +81,7 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 - [x] Add `runAsNonRoot`, dropped Linux capabilities, `allowPrivilegeEscalation: false`, and a read-only root filesystem where compatible.
 - [x] Define and enforce a Pod Security Admission baseline or restricted policy.
 - [x] Add NetworkPolicies and demonstrate that unauthorized pod-to-pod traffic is denied.
-- [ ] Define Kubernetes RBAC roles using least privilege.
+- [x] Keep the application ServiceAccount token disabled because the workload has no Kubernetes API requirement.
 - [ ] Add an SBOM and retain it with the image build evidence.
 - [ ] Review application authorization and test that unauthorized actions are denied.
 - [ ] Evaluate CloudTrail and GuardDuty for a controlled cloud-security exercise.
@@ -94,8 +97,8 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 
 ## RBAC and label-governance exercise
 
-- [ ] Prove that the application ServiceAccount cannot list Pods, read Secrets, create workloads, or access cluster-scoped resources.
-- [ ] Record `kubectl auth can-i` evidence for the application ServiceAccount.
+- [x] Prove that the application ServiceAccount cannot list Pods, read Secrets, create workloads, or access cluster-scoped resources.
+- [x] Record `kubectl auth can-i` evidence for the application ServiceAccount.
 - [ ] Define a least-privilege Role and RoleBinding only if the application gains a genuine Kubernetes API requirement.
 - [ ] Ensure GitHub Actions, Argo CD, and human operators use distinct identities and minimal namespace-scoped permissions.
 - [ ] Do not grant `cluster-admin` to application, CI, or GitOps identities.

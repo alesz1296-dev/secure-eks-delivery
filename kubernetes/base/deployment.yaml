@@ -38,8 +38,8 @@ spec:
 
       containers:
         - name: api
-          image: secure-eks-delivery:local
-          imagePullPolicy: Never
+          image: 535079145207.dkr.ecr.us-east-1.amazonaws.com/secure-eks-delivery-dev-fastapi@sha256:edb8ff20850eac39fdd047777e86c5a2c0a9f96167fcf1a09712b2f78991dccd
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 8080

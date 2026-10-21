@@ -73,6 +73,7 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 - [ ] Pin third-party GitHub Actions to full commit SHAs.
 - [ ] Keep untrusted pull-request code away from deployment credentials and privileged runners.
 - [ ] Add Gitleaks secret detection and Checkov Terraform scanning.
+- [x] Run a manual Checkov Terraform baseline and record the 89 passing checks and open findings in `docs/checkov-baseline.md`.
 - [ ] Add CodeQL or Semgrep source-code scanning after the base pipeline is stable.
 - [ ] Configure protected deployment environments and record the approval path.
 
@@ -90,8 +91,8 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 
 ## Local Kubernetes hardening follow-up
 
-- [ ] Add a namespace `ResourceQuota` for aggregate CPU, memory, Pod, and persistent-volume claims.
-- [ ] Add a namespace `LimitRange` that supplies safe default resource requests and limits for future workloads.
+- [x] Add and apply a namespace `ResourceQuota` for aggregate CPU, memory, and Pod limits; keep PVC quotas deferred because the workload is stateless.
+- [x] Add and apply a namespace `LimitRange` that supplies safe default resource requests and limits for future workloads.
 - [x] Keep the local kind node image and Cilium chart version pinned and document their upgrade procedure.
 - [ ] Create a Kubernetes overlay for EKS that replaces the local image and `imagePullPolicy: Never` with an ECR image digest.
 
@@ -107,6 +108,8 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 
 ## Network security hardening
 
+- [ ] Resolve or formally suppress the Checkov findings for the default security group, VPC Flow Logs, and the cluster-to-node rule after reviewing the effective ports and security-group references.
+- [ ] Decide whether customer-managed KMS encryption is justified for ECR; if retained, review the KMS key policy and document narrowly scoped Checkov exceptions.
 - [ ] Review the temporary unrestricted outbound rules on the EKS cluster and worker-node security groups.
 - [ ] Choose the final egress design: NAT Gateway, VPC endpoints, or a documented combination.
 - [ ] Add only the required NAT routes or endpoint security-group rules.

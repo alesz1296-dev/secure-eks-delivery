@@ -22,3 +22,5 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+
+# allows only DNS resolution to CoreDNS.

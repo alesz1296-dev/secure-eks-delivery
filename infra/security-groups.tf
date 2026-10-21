@@ -20,6 +20,20 @@ resource "aws_security_group" "eks_nodes" {
   })
 }
 
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+
+  # No inbound traffic by default.
+  ingress = []
+
+  # No outbound traffic by default.
+  egress = []
+
+  tags = merge(local.common_tags, {
+    Name = "${local.vpc_name}-default-deny"
+  })
+}
+
 resource "aws_vpc_security_group_ingress_rule" "nodes_to_cluster_api" {
   security_group_id            = aws_security_group.eks_cluster.id
   referenced_security_group_id = aws_security_group.eks_nodes.id #direct reference to SG, not CIDRs

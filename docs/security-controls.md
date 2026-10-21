@@ -11,6 +11,109 @@ This document demonstrates two complementary security practices:
 
 Neither tool replaces the other.
 
+## Kubernetes RBAC baseline: no API access by default
+
+The FastAPI workload uses a dedicated `secure-eks-delivery` ServiceAccount, but
+it does not need to call the Kubernetes API. The baseline therefore grants no
+application Role or RoleBinding and disables token mounting at both the
+ServiceAccount and pod levels:
+
+```yaml
+automountServiceAccountToken: false
+```
+
+This was verified in the local cluster with the following evidence:
+
+| Check | Result |
+| --- | --- |
+| ServiceAccount token inside the running pod | `token-absent` |
+| `kubectl auth can-i get pods` | `no` |
+| `kubectl auth can-i list nodes` | `no` |
+| `kubectl auth can-i get secrets` | Not granted by the workload identity |
+| `kubectl auth can-i update deployments` | Not granted by the workload identity |
+
+`kubectl auth can-i --list` still reports Kubernetes' limited built-in
+discovery and self-review permissions, such as API discovery endpoints and
+`selfsubjectreviews`. These do not grant access to pods, Secrets, ConfigMaps,
+Deployments, Services, Nodes, or Namespaces.
+
+This is intentional least privilege: the workload has an identity but no
+Kubernetes resource permissions. A namespace-scoped Role and RoleBinding should
+be introduced only if the application later gains a demonstrated Kubernetes
+API requirement. `cluster-admin` must not be granted to the application,
+deployment pipeline, or GitOps identities.
+
+## Namespace resource governance
+
+The FastAPI workload is currently stateless. It has no `PersistentVolumeClaim`,
+database, queue, or durable application-data requirement, so the initial
+namespace quota does **not** include PVC or storage limits. Storage quotas will
+be added only after the project defines a persistence requirement and its RPO,
+RTO, backup, and capacity expectations.
+
+The current Deployment requests `50m` CPU and `64Mi` memory, with limits of
+`250m` CPU and `256Mi` memory. The proposed namespace baseline uses those
+values as the per-container defaults and leaves controlled headroom for future
+replicas:
+
+```yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: secure-eks-delivery-quota
+  namespace: secure-eks-delivery
+spec:
+  hard:
+    pods: "10"
+    requests.cpu: "1"
+    limits.cpu: "2"
+    requests.memory: 1Gi
+    limits.memory: 2Gi
+```
+
+The quota values were selected as a lab starting point, not as universal
+production limits:
+
+- `pods: 10` prevents an accidental deployment loop from creating unbounded
+  pods while allowing rollout testing and modest horizontal growth.
+- `requests.cpu: 1` and `requests.memory: 1Gi` allow the current workload and
+  several small replicas to reserve capacity.
+- `limits.cpu: 2` and `limits.memory: 2Gi` provide burst headroom while keeping
+  the namespace bounded.
+
+A companion `LimitRange` should supply safe defaults to future containers and
+  reject obviously unreasonable values:
+
+```yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: secure-eks-delivery-defaults
+  namespace: secure-eks-delivery
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      default:
+        cpu: 250m
+        memory: 256Mi
+      min:
+        cpu: 10m
+        memory: 16Mi
+      max:
+        cpu: "1"
+        memory: 1Gi
+      maxLimitRequestRatio:
+        cpu: "4"
+        memory: "4"
+```
+
+These values must be revisited after observing startup and peak usage. Quotas
+should be increased only when replica counts, traffic, and capacity evidence
+justify the change.
+
 | Control | Tool | When it operates | Primary question answered |
 | --- | --- | --- | --- |
 | Image and dependency scanning | Trivy | Before image publication and deployment | Does this image contain known vulnerabilities? |
@@ -95,6 +198,34 @@ Run exercises only in the isolated lab cluster and restore the baseline afterwar
 | Write below `/etc` in a designated test container | Sensitive file-write alert, where an appropriate rule is enabled | Was the activity expected, and did the workload security context allow too much access? |
 | Unexpected package-management or network utility activity | Process/behavior alert, depending on active rules | Does the container image contain unnecessary tools or capabilities? |
 
+### Local Kind validation
+
+Falco chart `9.2.1` / Falco `0.45.1` was installed on the three-node Kind
+cluster using the `modern_ebpf` driver and least-privileged eBPF settings. All
+Falco DaemonSet pods reached `2/2 Running`.
+
+An interactive shell was deliberately opened in the application pod as a
+controlled test. Falco generated the expected notice on all three nodes:
+
+```text
+Notice A shell was spawned in a container with an attached terminal
+user_uid=10001 process=sh proc_exepath=/usr/bin/dash
+```
+
+One node included complete container and Kubernetes metadata:
+
+```text
+container_name=api
+container_image_repository=docker.io/library/import-2026-10-20
+container_image_tag=local
+k8s_pod_name=secure-eks-delivery-596c655b5d-7dgqb
+k8s_ns_name=secure-eks-delivery
+```
+
+The other nodes reported the syscall event but lacked some runtime metadata in
+the output. This is retained as a local Kind/Docker Desktop observation to
+reassess on EKS; it does not invalidate the detection result.
+
 ### Falco response workflow
 
 ```text
@@ -105,6 +236,27 @@ Falco event
   -> remediate the image, manifest, RBAC, or node configuration
   -> deploy the corrected version and record the outcome
 ```
+
+### Planned alert forwarding and automated response
+
+Falco Talon remains a pending enhancement. It may eventually perform narrowly
+scoped actions such as quarantining or deleting a confirmed-compromised pod,
+but the first production posture should remain detection-only to avoid harmful
+false-positive responses.
+
+For AWS notifications, the preferred path is:
+
+```text
+Falco -> Falcosidekick -> Amazon SNS -> subscribers or downstream responders
+```
+
+Falcosidekick supports AWS SNS as an output and can use AWS workload identity
+(IRSA or EKS Pod Identity) rather than embedding access keys in Helm values.
+SES is better treated as a downstream email service: use SNS email subscriptions
+for simple notifications, or route the event through Lambda/SMTP when a
+formatted SES message and application-controlled recipients are required.
+The local Kind cluster should use logs, a webhook, or a test endpoint; AWS
+credentials should not be added to the lab cluster merely to test alerting.
 
 ## Security boundaries and limitations
 

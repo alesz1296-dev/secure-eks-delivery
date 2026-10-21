@@ -7,7 +7,7 @@ resource "aws_launch_template" "eks_nodes" {
 
   metadata_options {
     http_tokens                 = "required" # forces IMDSv2
-    http_put_response_hop_limit = 2
+    http_put_response_hop_limit = 1 # limits the number of network hops for IMDS requests to 1, which is a security best practice.
   }
 
   block_device_mappings { # Explicitly enforce encrypted, disposable GP3 root storage for worker nodes.

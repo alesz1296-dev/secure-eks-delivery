@@ -128,6 +128,12 @@ Compare the expected session duration and required AWS services before choosing.
 
 Configure immutable tags where practical, scan-on-push as defense in depth, and a lifecycle policy that removes old lab images. Trivy remains the primary build gate.
 
+The baseline may use AWS-managed AES256 encryption for the lab. Customer-managed
+KMS encryption is an optional hardening decision: it adds explicit key ownership,
+rotation, and audit control, but also adds key-policy complexity and ongoing KMS
+cost. If selected, define the key policy deliberately and review Checkov's KMS
+policy findings rather than removing the account recovery administrator blindly.
+
 ### GitHub OIDC resources
 
 - `aws_iam_openid_connect_provider` for GitHub Actions

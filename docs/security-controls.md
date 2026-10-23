@@ -2,7 +2,14 @@
 
 ## Purpose
 
-This project uses layered security controls. Trivy and Falco remain the first two runtime-delivery controls, while GitHub OIDC, Gitleaks, Checkov, CodeQL or Semgrep, Kyverno, Kubernetes RBAC, and NetworkPolicies are introduced in staged iterations described in the [DevSecOps Security Roadmap](devsecops-roadmap.md).
+This project uses layered security controls. Trivy and Falco remain the first two runtime-delivery controls, while GitHub OIDC, Gitleaks, Checkov, SonarQube, CodeQL or Semgrep, Kyverno, Kubernetes RBAC, and NetworkPolicies are introduced in staged iterations described in the [DevSecOps Security Roadmap](devsecops-roadmap.md).
+
+SonarQube is the planned source-code quality and static-analysis control for
+pull requests. It complements Gitleaks, Checkov, and Trivy: SonarQube evaluates
+code quality, bugs, security hotspots, and duplication, but does not replace
+secret, IaC, dependency, or container scanning. The initial SonarQube trial is
+manual; CI enforcement begins only after the local project and quality gate are
+verified.
 
 This document demonstrates two complementary security practices:
 

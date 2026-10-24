@@ -17,4 +17,13 @@ crash.*.log
 kubeconfig
 *.pem
 *.key
-
+trivy-*.json
+trivy-*.log
+gitleaks-*.json
+gitleaks-*.sarif
+checkov-*.json
+trivy-*.json
+trivy-*.log
+gitleaks-*.sarif
+gitleaks-*.json
+checkov-*.json

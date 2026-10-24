@@ -73,8 +73,9 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 - [ ] Pin third-party GitHub Actions to full commit SHAs.
 - [ ] Keep untrusted pull-request code away from deployment credentials and privileged runners.
 - [ ] Add Gitleaks secret detection and Checkov Terraform scanning.
+- [x] Run a manual Gitleaks directory scan; current working tree returned no leaks after excluding generated scan reports.
 - [x] Run a manual Checkov Terraform baseline and record the 89 passing checks and open findings in `docs/checkov-baseline.md`.
-- [ ] Validate the production-like `.github/workflows/terraform-security.yml` workflow and retain its actionlint, Gitleaks, Checkov, TFLint, plan, and apply evidence.
+- [ ] Validate the separated `.github/workflows/pr-validation.yml`, `terraform-deploy.yml`, and `container-delivery.yml` workflows and retain their actionlint, Gitleaks, Checkov, TFLint, plan, apply, and image-scan evidence.
 - [ ] Run a manual SonarQube analysis of the Python/FastAPI source and record the quality-gate result.
 - [ ] Add SonarQube analysis and a quality-gate check to pull-request workflows.
 - [ ] Add CodeQL or Semgrep source-code scanning after the base pipeline is stable.

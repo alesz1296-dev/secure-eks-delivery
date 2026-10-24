@@ -1,0 +1,46 @@
+name: Terraform deployment
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  plan:
+    name: Terraform plan
+    runs-on: ubuntu-latest
+    environment: terraform-plan
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      # Configure a repository-scoped AWS OIDC role before enabling this job.
+      - working-directory: infra
+        run: terraform init -input=false
+      - working-directory: infra
+        run: terraform plan -input=false -no-color -out=tfplan
+      - uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ github.sha }}
+          path: infra/tfplan
+          retention-days: 14
+
+  apply:
+    name: Terraform apply
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      # Add aws-actions/configure-aws-credentials with the approved OIDC role.
+      - working-directory: infra
+        run: terraform init -input=false
+      - working-directory: infra
+        run: terraform apply -input=false -auto-approve
+

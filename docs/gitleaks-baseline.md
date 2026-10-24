@@ -12,13 +12,23 @@ Result:  no leaks found
 Scanned: approximately 711 KB
 ```
 
-## Historical findings
+## Historical findings and cleanup
 
-The earlier Git-history scan reported matches in generated Trivy JSON reports
-and a generated `gitleaks.sarif` file. These findings were not in application,
-Terraform, or Kubernetes source files. The generated reports are excluded from
-future commits and scans; historical matches remain repository-history hygiene
-items and are not treated as confirmed credentials.
+An earlier Git-history scan reported matches in generated Trivy JSON reports.
+The generated reports were removed from repository history with `git
+filter-repo`, and the rewritten `main` branch was pushed with an explicit
+force-with-lease. The local backup branch
+`backup-before-report-cleanup` preserves the pre-cleanup history if recovery is
+needed.
 
-The manual baseline is complete. CI integration remains pending until the
-pull-request workflow is validated and its report-retention behavior is tested.
+The post-cleanup full-history scan completed successfully:
+
+```text
+Command: gitleaks detect --source . --no-banner --redact
+Commits scanned: 15
+Result: no leaks found
+```
+
+Generated scan reports remain ignored and should be retained through CI
+artifacts rather than committed to the source repository. CI integration
+remains pending until the pull-request workflow is validated.

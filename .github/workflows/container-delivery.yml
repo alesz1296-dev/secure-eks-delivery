@@ -1,0 +1,31 @@
+name: Container delivery
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-scan:
+    name: Build, scan, and publish evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build linux/amd64 image
+        run: docker build --platform linux/amd64 -t secure-eks-delivery:ci .
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: secure-eks-delivery:ci
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: container-security-evidence-${{ github.sha }}
+          path: trivy-results.sarif
+          retention-days: 14
+      # Add OIDC authentication and ECR push only after the application role
+      # and protected deployment environment are configured.

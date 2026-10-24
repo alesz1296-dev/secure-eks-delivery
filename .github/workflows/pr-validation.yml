@@ -1,0 +1,44 @@
+name: Pull request validation
+
+on:
+  pull_request:
+    paths: ["app/**", "tests/**", "infra/**", "bootstrap/**", "kubernetes/**", ".github/workflows/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  infrastructure:
+    name: Infrastructure checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: raven-actions/actionlint@v2
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+      - run: terraform fmt -check -recursive
+      - working-directory: infra
+        run: terraform init -backend=false -input=false
+      - working-directory: infra
+        run: terraform validate
+      - uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: v0.53.0
+      - working-directory: infra
+        run: |
+          tflint --init
+          tflint --format compact
+      - run: python -m pip install --disable-pip-version-check checkov==3.3.30
+      - run: checkov -d infra --framework terraform --compact
+
+  application-security:
+    name: Application security checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # SonarQube is added after the manual project and quality gate are verified.
+

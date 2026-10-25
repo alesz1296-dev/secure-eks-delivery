@@ -76,10 +76,17 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 - [x] Run a manual Gitleaks directory scan; current working tree returned no leaks after excluding generated scan reports.
 - [x] Run a manual Checkov Terraform baseline and record the 89 passing checks and open findings in `docs/checkov-baseline.md`.
 - [ ] Validate the separated `.github/workflows/pr-validation.yml`, `terraform-deploy.yml`, and `container-delivery.yml` workflows and retain their actionlint, Gitleaks, Checkov, TFLint, plan, apply, and image-scan evidence.
+- [ ] Install pre-commit and validate the local hooks for formatting, Gitleaks, Terraform, TFLint, Checkov, and actionlint.
 - [x] Run TFLint manually against `infra/`; plugins initialized and the configuration returned no findings.
 - [x] Run actionlint 1.7.12 manually against all three workflows; the workflow files returned no findings.
-- [ ] Run a manual SonarQube analysis of the Python/FastAPI source and record the quality-gate result.
-- [ ] Add SonarQube analysis and a quality-gate check to pull-request workflows.
+- [x] Run a manual SonarQube analysis; quality gate passed with zero reported bugs, vulnerabilities, security hotspots, and code smells.
+- [x] Defer SonarQube PR quality-gate integration as an optional future enhancement outside the current project scope.
+- [x] Run manual pytest validation: 4 tests passed.
+- [x] Run manual Ruff validation: no findings.
+- [x] Run manual `pip-audit`: no known vulnerabilities in the locked requirements.
+- [x] Render and client-side validate the Kubernetes Kustomize base.
+- [x] Generate a filesystem SBOM with Trivy.
+- [ ] Configure Trivy filesystem CI exclusions for generated Terraform plan snapshots and local scan reports.
 - [ ] Add CodeQL or Semgrep source-code scanning after the base pipeline is stable.
 - [ ] Configure protected deployment environments and record the approval path.
 

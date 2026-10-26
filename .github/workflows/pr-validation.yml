@@ -16,7 +16,7 @@ jobs:
       - uses: raven-actions/actionlint@v2
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.9.8
+          terraform_version: 1.16.5
       - run: terraform fmt -check -recursive
       - working-directory: infra
         run: terraform init -backend=false -input=false

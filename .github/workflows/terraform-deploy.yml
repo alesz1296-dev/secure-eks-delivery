@@ -43,4 +43,3 @@ jobs:
         run: terraform init -input=false
       - working-directory: infra
         run: terraform apply -input=false -auto-approve
-

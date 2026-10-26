@@ -78,6 +78,18 @@ variable "enable_private_endpoints" {
   default     = false
 }
 
+variable "enable_github_oidc" {
+  description = "Create the GitHub Actions OIDC provider and plan identity role."
+  type        = bool
+  default     = false
+}
+
+variable "github_oidc_subject" {
+  description = "Exact GitHub OIDC subject claim for the protected terraform-plan environment."
+  type        = string
+  default     = "repo:alesz1296-dev@257826828/secure-eks-delivery@1419922858:environment:terraform-plan"
+}
+
 #resource cleanup deadline
 variable "cleanup_deadline" {
   description = "The deadline for resource cleanup, in ISO 8601 format."

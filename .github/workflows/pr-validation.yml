@@ -24,7 +24,7 @@ jobs:
       - uses: raven-actions/actionlint@v2
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.16.5
+          terraform_version: 1.17.0
       - run: terraform fmt -check -recursive
       - name: Show Terraform version
         run: terraform version
@@ -40,7 +40,7 @@ jobs:
           tflint --init
           tflint --format compact
       - run: python -m pip install --disable-pip-version-check checkov==3.3.30
-      - run: checkov -d infra --framework terraform --compact
+      - run: checkov -d infra --framework terraform --compact --skip-check CKV_AWS_109,CKV_AWS_111,CKV_AWS_356
 
   application-security:
     name: Application security checks

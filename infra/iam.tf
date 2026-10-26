@@ -94,6 +94,81 @@ data "aws_iam_policy_document" "vpc_flow_logs_assume_role" {
   }
 }
 
+#checkov:skip=CKV_AWS_109:KMS account administration is retained as the break-glass recovery path
+#checkov:skip=CKV_AWS_111:CloudWatch Logs cryptographic use is constrained by kms:ViaService and encryption context
+#checkov:skip=CKV_AWS_356:KMS key policies require Resource * for key-local permissions
+data "aws_iam_policy_document" "vpc_flow_logs_kms" {
+  statement {
+    sid    = "EnableAccountAdministration"
+    effect = "Allow"
+
+    principals {
+      type        = "AWS"
+      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
+    }
+
+    actions   = ["kms:*"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "AllowCloudWatchLogsUse"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${var.aws_region}.amazonaws.com"]
+    }
+
+    actions = [
+      "kms:Decrypt",
+      "kms:Encrypt",
+      "kms:ReEncrypt*",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey",
+    ]
+
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["logs.${var.aws_region}.amazonaws.com"]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "kms:EncryptionContext:aws:logs:arn"
+      values   = ["arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/vpc/${local.cluster_name}/flow-logs:*"]
+    }
+  }
+
+  statement {
+    sid    = "AllowCloudWatchLogsCreateGrant"
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["logs.${var.aws_region}.amazonaws.com"]
+    }
+
+    actions   = ["kms:CreateGrant"]
+    resources = ["*"]
+
+    condition {
+      test     = "Bool"
+      variable = "kms:GrantIsForAWSResource"
+      values   = ["true"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["logs.${var.aws_region}.amazonaws.com"]
+    }
+  }
+}
+
 resource "aws_iam_role" "vpc_flow_logs" {
   name               = "${local.cluster_name}-vpc-flow-logs-role"
   assume_role_policy = data.aws_iam_policy_document.vpc_flow_logs_assume_role.json

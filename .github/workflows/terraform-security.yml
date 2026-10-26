@@ -25,7 +25,7 @@ jobs:
         uses: raven-actions/actionlint@v2
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.16.5
+          terraform_version: 1.17.0
       - name: Terraform format check
         run: terraform fmt -check -recursive
       - name: Terraform init (offline validation)
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.16.5
+          terraform_version: 1.17.0
       # Configure a repository-scoped AWS OIDC role here before enabling remote plans.
       - name: Terraform init
         working-directory: infra
@@ -94,7 +94,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.16.5
+          terraform_version: 1.17.0
       # Configure the approved AWS OIDC role here; never use long-lived keys.
       - name: Terraform init
         working-directory: infra

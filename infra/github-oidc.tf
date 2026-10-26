@@ -37,7 +37,7 @@ data "aws_iam_policy_document" "github_plan_trust" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:alesz1296-dev@257826828/secure-eks-delivery@1419922858:environment:terraform-plan"]
+      values   = [var.github_oidc_subject]
     }
   }
 }
@@ -51,4 +51,43 @@ resource "aws_iam_role" "github_terraform_plan" {
     Name = "${local.name_prefix}-github-plan"
     Role = "github-actions-terraform-plan"
   })
+}
+
+data "aws_iam_policy_document" "github_terraform_plan_backend" {
+  count = var.enable_github_oidc ? 1 : 0
+
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:ListBucket"]
+    resources = ["arn:aws:s3:::secure-eks-delivery-tfstate-535079145207"]
+
+    condition {
+      test     = "StringLike"
+      variable = "s3:prefix"
+      values   = ["infra/terraform.tfstate"]
+    }
+  }
+
+  statement {
+    effect    = "Allow"
+    actions   = ["s3:GetObject", "s3:PutObject"]
+    resources = ["arn:aws:s3:::secure-eks-delivery-tfstate-535079145207/infra/terraform.tfstate"]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:PutObject",
+      "s3:DeleteObject",
+    ]
+    resources = ["arn:aws:s3:::secure-eks-delivery-tfstate-535079145207/infra/terraform.tfstate.tflock"]
+  }
+}
+
+resource "aws_iam_role_policy" "github_terraform_plan_backend" {
+  count  = var.enable_github_oidc ? 1 : 0
+  name   = "${local.name_prefix}-github-plan-backend"
+  role   = aws_iam_role.github_terraform_plan[0].id
+  policy = data.aws_iam_policy_document.github_terraform_plan_backend[0].json
 }

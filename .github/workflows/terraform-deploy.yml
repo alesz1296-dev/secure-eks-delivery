@@ -31,7 +31,7 @@ jobs:
       - working-directory: infra
         run: terraform init -input=false
       - working-directory: infra
-        run: terraform plan -input=false -no-color -out=tfplan
+        run: terraform plan -input=false -no-color -var-file=terraform.tfvars.example -out=tfplan
       - uses: actions/upload-artifact@v4
         with:
           name: terraform-plan-${{ github.sha }}

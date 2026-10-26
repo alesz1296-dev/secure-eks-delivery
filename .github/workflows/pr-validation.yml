@@ -2,7 +2,15 @@ name: Pull request validation
 
 on:
   pull_request:
-    paths: ["app/**", "tests/**", "infra/**", "bootstrap/**", "kubernetes/**", ".github/workflows/**"]
+    paths:
+      [
+        "app/**",
+        "tests/**",
+        "infra/**",
+        "bootstrap/**",
+        "kubernetes/**",
+        ".github/workflows/**",
+      ]
 
 permissions:
   contents: read
@@ -18,8 +26,10 @@ jobs:
         with:
           terraform_version: 1.16.5
       - run: terraform fmt -check -recursive
+      - name: Show Terraform version
+        run: terraform version
       - working-directory: infra
-        run: terraform init -backend=false -input=false
+        run: terraform init -input=false
       - working-directory: infra
         run: terraform validate
       - uses: terraform-linters/setup-tflint@v4

@@ -76,7 +76,7 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 - [x] Run a manual Gitleaks directory scan; current working tree returned no leaks after excluding generated scan reports.
 - [x] Run a manual Checkov Terraform baseline and record the 89 passing checks and open findings in `docs/checkov-baseline.md`.
 - [ ] Validate the separated `.github/workflows/pr-validation.yml`, `terraform-deploy.yml`, and `container-delivery.yml` workflows and retain their actionlint, Gitleaks, Checkov, TFLint, plan, apply, and image-scan evidence.
-- [ ] Install pre-commit and validate the local hooks for formatting, Gitleaks, Terraform, TFLint, Checkov, and actionlint.
+- [x] Install pre-commit and validate the local hooks for formatting, Gitleaks, Terraform, TFLint, Checkov, and actionlint. The complete `pre-commit run --all-files` suite passed locally.
 - [x] Run TFLint manually against `infra/`; plugins initialized and the configuration returned no findings.
 - [x] Run actionlint 1.7.12 manually against all three workflows; the workflow files returned no findings.
 - [x] Run a manual SonarQube analysis; quality gate passed with zero reported bugs, vulnerabilities, security hotspots, and code smells.

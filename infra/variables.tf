@@ -60,17 +60,17 @@ variable "enable_eks_node_group" {
   default     = false
 }
 
-variable "enable_nat_gateway" {
-  description = "Enable or disable the creation of NAT Gateways."
-  type        = bool
-  default     = false
-}
+#variable "enable_nat_gateway" {
+#  description = "Enable or disable the creation of NAT Gateways."
+#  type        = bool
+#  default     = false
+#}
 
-variable "enable_ingress" {
-  description = "Enable or disable the creation of Ingress resources."
-  type        = bool
-  default     = false
-}
+#variable "enable_ingress" {
+#  description = "Enable or disable the creation of Ingress resources."
+#  type        = bool
+#  default     = false
+#}
 
 variable "enable_private_endpoints" {
   description = "Enable or disable the creation of private endpoints for AWS services."
@@ -89,11 +89,11 @@ variable "cleanup_deadline" {
   }
 }
 
-variable "enable_aws_load_balancer_controller" {
-  description = "Enable or disable the creation of AWS Load Balancer Controller."
-  type        = bool
-  default     = false
-}
+#variable "enable_aws_load_balancer_controller" {
+#  description = "Enable or disable the creation of AWS Load Balancer Controller."
+#  type        = bool
+#  default     = false
+#}
 
 
 #networking variables
@@ -108,19 +108,6 @@ variable "kubernetes_api_port" {
   type        = number
   default     = 443
 }
-variable "cluster_to_node_from_port" {
-  description = "Lowest TCP port allowed from the EKS control plane to worker nodes."
-  type        = number
-  default     = 1025
-}
-
-variable "cluster_to_node_to_port" {
-  description = "Highest TCP port allowed from the EKS control plane to worker nodes."
-  type        = number
-  default     = 65535
-
-}
-
 #ECR variables
 variable "ecr_force_delete" {
   description = "Force delete ECR resources even if images exist."
@@ -193,10 +180,10 @@ variable "eks_node_max_size" {
 
 #endpoints variables
 
-variable "vpc_endpoint_subnet_ids" {
-  type    = list(string)
-  default = []
-}
+#variable "vpc_endpoint_subnet_ids" {
+#  type    = list(string)
+#  default = []
+#}
 
 
 variable "vpc_endpoint_from_port" {
@@ -209,4 +196,4 @@ variable "vpc_endpoint_to_port" {
   description = "The highest port for VPC endpoint security group rules."
   type        = number
   default     = 443
-} 
+}

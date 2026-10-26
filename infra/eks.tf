@@ -73,5 +73,3 @@ resource "aws_eks_node_group" "main" {
     Role = "eks-worker-nodes"
   })
 }
-
-

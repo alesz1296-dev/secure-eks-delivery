@@ -77,3 +77,50 @@ resource "aws_iam_instance_profile" "eks_nodes" {
     Role = "eks-worker-node"
   })
 }
+
+# VPC Flow Logs delivery role. Keep this separate from the EKS roles so the
+# logging service receives only the permissions required to write its log
+# stream.
+data "aws_iam_policy_document" "vpc_flow_logs_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["vpc-flow-logs.amazonaws.com"]
+    }
+
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role" "vpc_flow_logs" {
+  name               = "${local.cluster_name}-vpc-flow-logs-role"
+  assume_role_policy = data.aws_iam_policy_document.vpc_flow_logs_assume_role.json
+
+  tags = merge(local.common_tags, {
+    Name = "${local.cluster_name}-vpc-flow-logs-role"
+    Role = "vpc-flow-logs"
+  })
+}
+
+data "aws_iam_policy_document" "vpc_flow_logs" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "logs:CreateLogStream",
+      "logs:DescribeLogGroups",
+      "logs:DescribeLogStreams",
+      "logs:PutLogEvents",
+    ]
+
+    resources = ["${aws_cloudwatch_log_group.vpc_flow_logs.arn}:*"]
+  }
+}
+
+resource "aws_iam_role_policy" "vpc_flow_logs" {
+  name   = "${local.cluster_name}-vpc-flow-logs"
+  role   = aws_iam_role.vpc_flow_logs.id
+  policy = data.aws_iam_policy_document.vpc_flow_logs.json
+}

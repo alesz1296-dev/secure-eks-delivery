@@ -45,15 +45,26 @@ resource "aws_vpc_security_group_ingress_rule" "nodes_to_cluster_api" {
   description = "Allow worker nodes to reach the Kubernetes API"
 }
 
-resource "aws_vpc_security_group_ingress_rule" "cluster_to_nodes" {
+resource "aws_vpc_security_group_ingress_rule" "cluster_to_nodes_kubelet" {
   security_group_id            = aws_security_group.eks_nodes.id
   referenced_security_group_id = aws_security_group.eks_cluster.id #direct reference to SG, not CIDRs
 
-  ip_protocol = var.protocol
-  from_port   = var.cluster_to_node_from_port
-  to_port     = var.cluster_to_node_to_port
+  ip_protocol = "tcp"
+  from_port   = 10250
+  to_port     = 10250
 
-  description = "Allow Kubernetes API to reach worker nodes"
+  description = "Allow EKS control plane to reach kubelet on worker nodes"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "cluster_to_nodes_webhook" {
+  security_group_id            = aws_security_group.eks_nodes.id
+  referenced_security_group_id = aws_security_group.eks_cluster.id
+
+  ip_protocol = "tcp"
+  from_port   = 443
+  to_port     = 443
+
+  description = "Allow EKS control plane to reach node webhooks"
 }
 
 resource "aws_vpc_security_group_ingress_rule" "nodes_to_nodes" {

@@ -51,6 +51,29 @@ The 89 passing checks cover, among other areas, IAM policy restrictions, IMDSv2,
 encrypted node storage, private subnet behavior, ECR scan-on-push, immutable
 ECR tags, security-group descriptions, and hard-coded credential checks.
 
+## Encryption redesign and current status
+
+The custom ECR and CloudWatch Logs customer-managed KMS keys were replaced
+with the AWS-managed service keys `alias/aws/ecr` and `alias/aws/logs`. This
+keeps both services encrypted while removing locally managed key policies with
+account-wide `kms:*` and `Resource = "*"` statements. CloudWatch Flow Logs use
+365-day retention. The redesign removed the six KMS policy findings from the
+scan.
+
+The hardened security-group rules now allow only TCP 10250 (kubelet) and TCP
+443 (node webhooks) from the EKS control-plane security group to worker nodes;
+the previous broad 1025-65535 range was removed.
+
+Latest manual result:
+
+```text
+Terraform validate: success
+Checkov 3.3.30: 131 passed, 0 failed, 0 skipped
+```
+
+This is a manual baseline, not yet a CI gate. The result must be reproduced in
+GitHub Actions and retained as a workflow artifact.
+
 ## Current status
 
 This is a manual baseline, not yet a CI gate. Findings remain open for

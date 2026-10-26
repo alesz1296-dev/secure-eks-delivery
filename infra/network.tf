@@ -48,8 +48,20 @@ resource "aws_route_table_association" "private" {
 }
 
 resource "aws_flow_log" "vpc" {
-  vpc_id          = aws_vpc.main.id
-  traffic_type    = "ALL"
-  iam_role_arn    = aws_iam_role.vpc_flow_logs.arn
-  log_destination = aws_cloudwatch_log_group.vpc_flow_logs.arn
+  vpc_id               = aws_vpc.main.id
+  traffic_type         = "ALL"
+  iam_role_arn         = aws_iam_role.vpc_flow_logs.arn
+  log_destination      = aws_cloudwatch_log_group.vpc_flow_logs.arn
+  log_destination_type = "cloud-watch-logs"
+}
+
+resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
+  name              = "/aws/vpc/${local.cluster_name}/flow-logs"
+  retention_in_days = 365
+  kms_key_id        = data.aws_kms_alias.logs.target_key_arn
+
+  tags = merge(local.common_tags, {
+    Name = "${local.cluster_name}-vpc-flow-logs"
+    Role = "network-observability"
+  })
 }

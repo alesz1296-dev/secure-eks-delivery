@@ -12,34 +12,45 @@ jobs:
     name: Terraform plan
     runs-on: ubuntu-latest
     environment: terraform-plan
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.9.8
-      # Configure a repository-scoped AWS OIDC role before enabling this job.
+          terraform_version: 1.17.0
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+          audience: sts.amazonaws.com
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
       - working-directory: infra
         run: terraform init -input=false
       - working-directory: infra
-        run: terraform plan -input=false -no-color -out=tfplan
+        run: terraform plan -input=false -no-color -var-file=terraform.tfvars.example -out=tfplan
       - uses: actions/upload-artifact@v4
         with:
           name: terraform-plan-${{ github.sha }}
           path: infra/tfplan
           retention-days: 14
 
-  apply:
-    name: Terraform apply
-    needs: plan
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.9.8
-      # Add aws-actions/configure-aws-credentials with the approved OIDC role.
-      - working-directory: infra
-        run: terraform init -input=false
-      - working-directory: infra
-        run: terraform apply -input=false -auto-approve
+  # Apply is intentionally disabled while the production OIDC role,
+  # protected environment, approval path, and cost controls are being tested.
+  # apply:
+  #   name: Terraform apply
+  #   needs: plan
+  #   runs-on: ubuntu-latest
+  #   environment: production
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: hashicorp/setup-terraform@v3
+  #       with:
+  #         terraform_version: 1.17.0
+  #     - working-directory: infra
+  #       run: terraform init -input=false
+  #     - working-directory: infra
+  #       run: terraform apply -input=false -auto-approve

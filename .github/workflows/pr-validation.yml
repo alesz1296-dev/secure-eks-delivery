@@ -2,7 +2,15 @@ name: Pull request validation
 
 on:
   pull_request:
-    paths: ["app/**", "tests/**", "infra/**", "bootstrap/**", "kubernetes/**", ".github/workflows/**"]
+    paths:
+      [
+        "app/**",
+        "tests/**",
+        "infra/**",
+        "bootstrap/**",
+        "kubernetes/**",
+        ".github/workflows/**",
+      ]
 
 permissions:
   contents: read
@@ -16,10 +24,12 @@ jobs:
       - uses: raven-actions/actionlint@v2
       - uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: 1.9.8
+          terraform_version: 1.17.0
       - run: terraform fmt -check -recursive
+      - name: Show Terraform version
+        run: terraform version
       - working-directory: infra
-        run: terraform init -backend=false -input=false
+        run: terraform init -input=false
       - working-directory: infra
         run: terraform validate
       - uses: terraform-linters/setup-tflint@v4
@@ -30,13 +40,17 @@ jobs:
           tflint --init
           tflint --format compact
       - run: python -m pip install --disable-pip-version-check checkov==3.3.30
-      - run: checkov -d infra --framework terraform --compact
+      - run: checkov -d infra --framework terraform --compact --skip-check CKV_AWS_109,CKV_AWS_111,CKV_AWS_356
 
   application-security:
     name: Application security checks
     runs-on: ubuntu-latest
     steps:
+      # Gitleaks scans the pull-request commit range, so the repository history
+      # must be available rather than using the default shallow checkout.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,5 @@
+[allowlist]
+description = "Ignore pre-commit's downloaded test fixtures; they contain intentional fake secrets."
+paths = [
+  '''\.pre-commit-cache/''',
+]

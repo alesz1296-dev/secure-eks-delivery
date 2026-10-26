@@ -1,0 +1,4 @@
+aws_region              = "us-east-1"
+environment             = "dev"
+cleanup_deadline        = "2099-12-31T23:59:59Z"
+eks_public_access_cidrs = []

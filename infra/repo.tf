@@ -9,7 +9,7 @@ resource "aws_ecr_repository" "fastapi" {
 
   encryption_configuration {
     encryption_type = "KMS"
-    kms_key         = data.aws_kms_alias.ecr.target_key_arn
+    kms_key         = aws_kms_key.ecr.arn
   }
 
   # Removed AES256 encryption because moving to KMS encryption. If you want to use AES256, uncomment the following lines and comment out the KMS encryption block above.

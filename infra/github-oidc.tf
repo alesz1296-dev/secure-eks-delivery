@@ -35,12 +35,9 @@ data "aws_iam_policy_document" "github_plan_trust" {
     }
 
     condition {
-      # Temporary diagnostic scope: confirm the repository's actual GitHub
-      # subject claim before narrowing this back to the terraform-plan
-      # environment. Do not leave the wildcard in production.
-      test     = "StringLike"
+      test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:*"]
+      values   = ["repo:alesz1296-dev@257826828/secure-eks-delivery@1419922858:environment:terraform-plan"]
     }
   }
 }

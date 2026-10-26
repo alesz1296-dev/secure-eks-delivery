@@ -91,3 +91,9 @@ resource "aws_iam_role_policy" "github_terraform_plan_backend" {
   role   = aws_iam_role.github_terraform_plan[0].id
   policy = data.aws_iam_policy_document.github_terraform_plan_backend[0].json
 }
+
+resource "aws_iam_role_policy_attachment" "github_terraform_plan_read_only" {
+  count      = var.enable_github_oidc ? 1 : 0
+  role       = aws_iam_role.github_terraform_plan[0].name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}

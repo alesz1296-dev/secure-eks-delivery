@@ -34,18 +34,19 @@ jobs:
           path: infra/tfplan
           retention-days: 14
 
-  apply:
-    name: Terraform apply
-    needs: plan
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.9.8
-      # Add aws-actions/configure-aws-credentials with the approved OIDC role.
-      - working-directory: infra
-        run: terraform init -input=false
-      - working-directory: infra
-        run: terraform apply -input=false -auto-approve
+  # Apply is intentionally disabled while the production OIDC role,
+  # protected environment, approval path, and cost controls are being tested.
+  # apply:
+  #   name: Terraform apply
+  #   needs: plan
+  #   runs-on: ubuntu-latest
+  #   environment: production
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: hashicorp/setup-terraform@v3
+  #       with:
+  #         terraform_version: 1.9.8
+  #     - working-directory: infra
+  #       run: terraform init -input=false
+  #     - working-directory: infra
+  #       run: terraform apply -input=false -auto-approve

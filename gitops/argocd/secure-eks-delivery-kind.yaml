@@ -11,8 +11,9 @@ spec:
   project: default
   source:
     repoURL: https://github.com/alesz1296-dev/secure-eks-delivery.git
-    # This branch is the local validation environment. Change to main after merge.
-    targetRevision: validate-github-actions
+    # This branch is the local continuous-delivery validation environment.
+    # Change to main after the deployment model is merged and approved.
+    targetRevision: validate-continuous-deployment
     path: kubernetes/overlays/kind
   destination:
     server: https://kubernetes.default.svc

@@ -4,7 +4,7 @@ This update covers the point where the project stopped being only an AWS diagram
 
 The goal is still the same: build a small FastAPI service, deliver it securely to Amazon EKS, and use the project to practise Terraform, container security, Kubernetes security, vulnerability management, and runtime detection. The important constraint is cost: AWS infrastructure is defined in Terraform, but EKS has **not** been applied while I validate the workload locally first.
 
-![Secure EKS Delivery Lab architecture](architecture-recreated.png)
+![Secure EKS Delivery Lab architecture](images/architecture-recreated.png)
 
 ## AWS infrastructure: designed in layers, intentionally not running
 

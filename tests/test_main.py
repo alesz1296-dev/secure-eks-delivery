@@ -29,4 +29,3 @@ def test_rejects_blank_task_title() -> None:
     response = client.post("/api/tasks", json={"title": ""})
 
     assert response.status_code == 422
-

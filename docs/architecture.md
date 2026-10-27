@@ -12,7 +12,7 @@ Deliver a small containerized FastAPI workload to Amazon EKS with infrastructure
 
 The editable diagram source is [`architecture.mmd`](architecture.mmd). The rendered PNG is useful for the portfolio overview; this Mermaid source is the version to update when the Terraform architecture changes.
 
-The private egress and endpoint security-group relationships are illustrated in [`private-eks-egress-diagram.png`](private-eks-egress-diagram.png).
+The private egress and endpoint security-group relationships are illustrated in [`images/private-eks-egress-diagram.png`](images/private-eks-egress-diagram.png).
 
 ```text
 Developer

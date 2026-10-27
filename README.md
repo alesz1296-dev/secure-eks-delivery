@@ -18,7 +18,7 @@ The emphasis is on learning by building: each stage is implemented, tested, docu
 
 ## Architecture
 
-![Secure EKS Delivery Lab architecture](docs/architecture.png)
+![Secure EKS Delivery Lab architecture](docs/images/architecture.png)
 
 ```text
 Developer change

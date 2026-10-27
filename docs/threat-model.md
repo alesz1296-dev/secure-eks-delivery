@@ -42,4 +42,3 @@ This is a learning-lab threat model for the project application, CI pipeline, re
 ## Review triggers
 
 Review this threat model when adding ingress, persistent storage, external databases, secrets, CI deployment permissions, Helm, or Argo CD.
-

@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: secure-eks-delivery
+  namespace: secure-eks-delivery
+  labels:
+    app.kubernetes.io/name: secure-eks-delivery
+    app.kubernetes.io/part-of: secure-eks-delivery
+spec:
+  # Five replicas make a 20% canary represent one pod during later releases.
+  replicas: 5
+  revisionHistoryLimit: 3
+  minReadySeconds: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: secure-eks-delivery
+  workloadRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: secure-eks-delivery
+    # Preserve the current Deployment until the Rollout's pods are healthy.
+    scaleDown: onsuccess
+  strategy:
+    canary:
+      maxSurge: 1
+      maxUnavailable: 0

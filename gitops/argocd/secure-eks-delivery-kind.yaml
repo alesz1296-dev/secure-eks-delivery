@@ -18,8 +18,19 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: secure-eks-delivery
+  ignoreDifferences:
+    # The Rollout controller scales the referenced Deployment during migration.
+    - group: apps
+      kind: Deployment
+      name: secure-eks-delivery
+      namespace: secure-eks-delivery
+      jsonPointers:
+        - /spec/replicas
   revisionHistoryLimit: 5
   syncPolicy:
+    syncOptions:
+      # Apply the ignore rule as well as using it for the diff view.
+      - RespectIgnoreDifferences=true
     automated:
       # Keep deletion manual until GitOps pruning has been rehearsed safely.
       prune: false

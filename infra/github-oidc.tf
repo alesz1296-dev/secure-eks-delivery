@@ -154,6 +154,7 @@ data "aws_iam_policy_document" "github_container_delivery_ecr" {
     sid    = "PushOnlyToProjectRepository"
     effect = "Allow"
     actions = [
+      "ecr:BatchGetImage",
       "ecr:BatchCheckLayerAvailability",
       "ecr:CompleteLayerUpload",
       "ecr:DescribeImages",

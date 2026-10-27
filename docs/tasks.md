@@ -70,7 +70,7 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 - [x] Create the GitHub OIDC provider and an exact-subject, environment-scoped Terraform plan role.
 - [x] Do not use long-lived AWS access keys in the validated Terraform plan workflow.
 - [x] Set minimum `GITHUB_TOKEN` permissions per workflow and job.
-- [ ] Pin third-party GitHub Actions to full commit SHAs.
+- [x] Pin third-party GitHub Actions to full commit SHAs and record the release tag in workflow comments.
 - [ ] Keep untrusted pull-request code away from deployment credentials and privileged runners.
 - [x] Add Gitleaks secret detection and Checkov Terraform scanning.
 - [x] Run a manual Gitleaks directory scan; current working tree returned no leaks after excluding generated scan reports.

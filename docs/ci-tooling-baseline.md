@@ -27,6 +27,10 @@ TFLint baseline and the current workflow YAML passes actionlint. They do not
 yet prove that GitHub Actions can authenticate to AWS, execute a remote plan,
 or perform an approved apply.
 
+All third-party actions in the active workflows are referenced by full commit
+SHA, with the human-readable release tag retained in a comment. This prevents
+a mutable action tag from silently changing the code executed by CI.
+
 ## SonarQube manual analysis
 
 The Python/FastAPI source was analyzed using the local SonarQube instance.

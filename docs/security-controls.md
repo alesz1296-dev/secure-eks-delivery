@@ -140,12 +140,13 @@ Source change
   -> deploy that exact digest to EKS
 ```
 
-### Initial policy
+### Portfolio-lab policy
 
 - Scan the built container image in GitHub Actions.
 - Preserve a report of all findings as a workflow artifact.
-- Fail the pipeline for **fixable HIGH and CRITICAL** vulnerabilities.
-- Review findings without an available fix; record any temporary exception with owner, rationale, expiry date, and remediation plan.
+- Retain the SARIF report and triage material findings in the project documentation.
+- Do not fail this portfolio-lab workflow on severity alone; its purpose is to demonstrate evidence collection and contextual risk assessment.
+- For a production service, define a blocking threshold, an exception owner, rationale, expiry date, and remediation plan before release.
 - Never deploy an image merely because it has a convenient mutable tag.
 
 ### Remediation practice
@@ -272,6 +273,20 @@ credentials should not be added to the lab cluster merely to test alerting.
 - Findings must be interpreted in context and documented with evidence.
 - The initial lab does not implement automated blocking, SIEM integration, or production incident response.
 
+## Container publication identity
+
+The ECR publication workflow is a separate trust boundary. Its GitHub
+environment releases an OIDC token only to the publisher job after quality
+checks, secret detection, build, and retained Trivy evidence complete. The AWS
+publisher role is limited to authentication and image upload for the project
+ECR repository. It is not the Terraform plan role, does not have EKS access,
+and cannot modify IAM or infrastructure.
+
+The lab intentionally retains Trivy as evidence rather than a vulnerability
+blocking gate. This does not remove the need for a production vulnerability
+policy; it keeps the portfolio focus on the pipeline design and separated
+identities.
+
 ## Temporary network egress exception
 
 During the initial EKS networking phase, the cluster and worker-node security groups use unrestricted outbound traffic. This is a deliberate temporary lab decision so that EKS, image pulls, node updates, and AWS service integrations can be validated before the egress architecture is finalized.
@@ -295,4 +310,3 @@ Trivy and Falco are the first security milestone. The full DevSecOps scope is co
 4. **Kubernetes prevention:** non-root/security-context controls, Pod Security Admission or Kyverno rejection evidence, RBAC review, and a denied NetworkPolicy test.
 5. **Cloud detection and response:** EKS audit logs plus a documented CloudTrail/GuardDuty or equivalent simulated-event investigation.
 6. **Supply-chain traceability:** SBOM and source-to-image-to-deployment evidence; signing is a later enhancement if selected.
-

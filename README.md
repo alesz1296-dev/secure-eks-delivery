@@ -10,11 +10,11 @@ The emphasis is on learning by building: each stage is implemented, tested, docu
 - Deploy a containerized web application to Amazon EKS using EC2 managed nodes.
 - Apply secure Kubernetes workload defaults: non-root execution, readiness probes, resource requests and limits, and least-privilege access.
 - Build a CI pipeline with GitHub Actions that tests, builds, scans, and publishes images.
-- Scan container images with Trivy and block fixable HIGH and CRITICAL vulnerabilities.
+- Scan container images with Trivy, retain the evidence, and document vulnerability triage.
 - Deploy immutable image digests from Amazon ECR.
 - Detect and investigate suspicious container behavior using Falco.
 - Introduce Helm for repeatable packaging and Falco installation.
-- Introduce Argo CD later for GitOps-based continuous delivery.
+- Introduce Argo CD for GitOps-based continuous delivery.
 
 ## Architecture
 
@@ -41,32 +41,31 @@ Later: Helm packages workloads and Falco; Argo CD reconciles declared Git state 
 
 Trivy and Falco serve different purposes:
 
-| Tool | Purpose |
-| --- | --- |
+| Tool  | Purpose                                                                                    |
+| ----- | ------------------------------------------------------------------------------------------ |
 | Trivy | Finds known vulnerabilities (CVEs) in container images and dependencies before deployment. |
-| Falco | Detects suspicious behavior while containers are running. |
+| Falco | Detects suspicious behavior while containers are running.                                  |
 
-Initial scan policy: fail the delivery pipeline for fixable HIGH and CRITICAL findings. Findings without an available fix must be reviewed and recorded as explicit exceptions.
+Portfolio-lab scan policy: retain Trivy evidence in CI and document material findings. This project intentionally does **not** block delivery on HIGH or CRITICAL findings because its focus is demonstrating the wider delivery, identity, Kubernetes, and runtime-detection lifecycle. A real production service should add a risk-approved vulnerability gate with ownership, remediation deadlines, and exceptions.
 
 ## Learning roadmap
 
 ### Stage 1 — Infrastructure and application deployment
 
-- [ ] Provision VPC, ECR, IAM, and EKS with Terraform.
+- [x] Provision and validate the AWS foundation: VPC, private subnets, security groups, ECR, IAM, VPC Flow Logs, remote state, and a GitHub OIDC plan role.
+- [ ] Provision EKS and managed nodes. They remain disabled by cost-control feature flags.
 - [ ] Use EC2-backed EKS managed nodes to support host-visible Falco runtime detection.
-- [ ] Build and containerize a small FastAPI or Node.js application.
-- [ ] Deploy it with a Kubernetes Deployment and Service.
-- [ ] Add a non-root container user, readiness probes, resource requests, and resource limits.
-- [ ] Verify access through `kubectl port-forward` before adding ingress or HTTPS.
+- [x] Build and harden the FastAPI container.
+- [x] Deploy and verify it locally on Kind with a Deployment, Service, health probes, ResourceQuota, LimitRange, RBAC baseline, Pod Security Admission, and Cilium NetworkPolicies.
+- [x] Verify the workload through `kubectl port-forward` before adding ingress or HTTPS.
 
 ### Stage 2 — Secure CI delivery
 
-- [ ] Run application tests in GitHub Actions.
-- [ ] Build and scan the image with Trivy.
-- [ ] Retain the scan report as a workflow artifact.
-- [ ] Authenticate GitHub Actions to AWS through OIDC; do not store long-lived AWS keys in GitHub.
-- [ ] Publish passing images to ECR.
-- [ ] Deploy the exact image digest, not a mutable tag.
+- [x] Run infrastructure and secret/IaC checks in GitHub Actions.
+- [x] Build and scan a `linux/amd64` image with Trivy and retain SARIF evidence as a workflow artifact.
+- [x] Authenticate the Terraform plan workflow to AWS through GitHub OIDC; no long-lived AWS key is stored in GitHub.
+- [x] Publish a scanned candidate image to ECR and deploy it locally by immutable digest.
+- [ ] Automate ECR publication and an EKS deployment only after a dedicated application delivery role and protected environment are configured.
 
 ### Stage 3 — Vulnerability remediation exercise
 
@@ -78,9 +77,8 @@ Initial scan policy: fail the delivery pipeline for fixable HIGH and CRITICAL fi
 
 ### Stage 4 — Runtime detection with Helm
 
-- [ ] Install Falco using its Helm chart.
-- [ ] Generate controlled test activity in a dedicated test workload.
-- [ ] Inspect the resulting alert: rule, process, container, pod, and response.
+- [x] Install Falco using its Helm chart on Kind and generate a controlled shell event.
+- [x] Inspect the resulting alert: rule, process, container, pod, and response.
 - [ ] Document mitigation and cleanup.
 
 ### Stage 5 — GitOps with Argo CD (later)
@@ -104,12 +102,12 @@ This is an intentional, short-lived lab. Resources must not be left running betw
 
 ## Remediation model
 
-| Vulnerability location | Expected remediation |
-| --- | --- |
-| Application dependency | Update the dependency and lockfile; test, rebuild, and rescan. |
-| Container OS package | Update the base image or package installation; rebuild and rescan. |
-| EKS worker-node OS | Update the managed node group AMI and roll nodes safely. |
-| Kubernetes component or add-on | Upgrade the component and verify version compatibility. |
+| Vulnerability location         | Expected remediation                                               |
+| ------------------------------ | ------------------------------------------------------------------ |
+| Application dependency         | Update the dependency and lockfile; test, rebuild, and rescan.     |
+| Container OS package           | Update the base image or package installation; rebuild and rescan. |
+| EKS worker-node OS             | Update the managed node group AMI and roll nodes safely.           |
+| Kubernetes component or add-on | Upgrade the component and verify version compatibility.            |
 
 Application containers are rebuilt and replaced; running pods are never manually patched.
 
@@ -135,9 +133,17 @@ Keep sanitized screenshots, workflow logs, scan reports, deployment evidence, Fa
 └── .github/workflows/   # CI workflows
 ```
 
-## Status
+## Current status — 2026-10-27
 
-Planning and repository initialization. No AWS infrastructure is deployed.
+The project has a working local Kubernetes security baseline and a partially applied, cost-controlled AWS foundation. VPC, ECR, IAM, customer-managed KMS keys, VPC Flow Logs, remote Terraform state, and the GitHub OIDC plan identity exist. EKS, EC2 node groups, NAT Gateway, interface endpoints, ingress, and public application exposure remain disabled.
+
+The active CI path is split deliberately:
+
+- **Pull request validation:** formatting, Terraform validation, TFLint, Checkov (with three documented KMS-policy model exclusions), and Gitleaks.
+- **Terraform deployment:** manually dispatched, OIDC-authenticated, remote-state **plan only**; apply is intentionally disabled.
+- **Container delivery:** a defined gated workflow runs quality checks, Gitleaks, `linux/amd64` build, Trivy SARIF evidence, a CycloneDX SBOM, and—after protected-environment approval—ECR publication by immutable tags. The publisher role/environment still need to be applied and configured.
+
+Local pre-commit checks, the GitHub PR workflow, the OIDC Terraform plan workflow, and the container evidence workflow have all been validated. See [the task backlog](docs/tasks.md) for remaining platform work.
 
 ## Task backlog
 
@@ -175,4 +181,3 @@ docker run --rm -p 8080:8080 secure-eks-delivery:local
 ```
 
 The Dockerfile runs as UID `10001`, rather than root. Kubernetes will later reinforce this with a security context and other workload restrictions.
-

@@ -90,6 +90,12 @@ variable "github_oidc_subject" {
   default     = "repo:alesz1296-dev@257826828/secure-eks-delivery@1419922858:environment:terraform-plan"
 }
 
+variable "github_container_delivery_oidc_subject" {
+  description = "Exact GitHub OIDC subject claim for the protected container-delivery environment."
+  type        = string
+  default     = "repo:alesz1296-dev@257826828/secure-eks-delivery@1419922858:environment:container-delivery"
+}
+
 #resource cleanup deadline
 variable "cleanup_deadline" {
   description = "The deadline for resource cleanup, in ISO 8601 format."

@@ -28,7 +28,7 @@ Threat model -> prevent -> detect before deployment -> detect at runtime
 - Pin third-party GitHub Actions to full commit SHAs.
 - Do not expose deployment secrets or privileged runners to untrusted pull-request code.
 - Require review for deployment-environment changes.
-- Run Gitleaks, Checkov, application tests, SonarQube, and Trivy before an image can be published or deployed.
+- Run Gitleaks, Checkov, application tests, SonarQube, and Trivy before an image can be published or deployed. For this portfolio lab, Trivy provides retained evidence and triage rather than a blocking vulnerability threshold; a production service must define and approve that threshold.
 
 ## Security-tool scope
 

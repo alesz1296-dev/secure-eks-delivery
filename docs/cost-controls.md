@@ -4,6 +4,12 @@
 
 This is a short-lived learning environment. Do not leave billable infrastructure running between intentional lab sessions.
 
+## Current AWS cost posture — 2026-10-27
+
+The low-cost foundation is applied: remote state, VPC, private subnets, security groups, ECR, IAM/OIDC, customer-managed KMS keys, VPC Flow Logs, and the associated CloudWatch log group. These can still incur storage, KMS, and CloudWatch ingestion/retention charges.
+
+The expensive compute and network features remain disabled: `enable_eks = false`, `enable_eks_node_group = false`, and `enable_private_endpoints = false`. No NAT Gateway, EKS control plane, EC2 worker node, load balancer, ingress, or public application endpoint should exist. Review the AWS console and `terraform plan` before every apply; this document is not proof that AWS has no residual billable resource.
+
 ## Required controls before provisioning
 
 - Set an AWS Budget and billing alert.

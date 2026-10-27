@@ -2,7 +2,7 @@
 
 ## Status
 
-This is the target architecture. Components are marked as planned until they are deployed and verified.
+This document distinguishes the implemented foundation from the target EKS architecture. The local Kind baseline is verified; EKS and its node group remain deliberately disabled for cost control.
 
 ## Purpose
 
@@ -37,14 +37,14 @@ The target design adds an SSM-managed administration host and private Systems Ma
 
 | Component                | Purpose                                             | Status  |
 | ------------------------ | --------------------------------------------------- | ------- |
-| VPC and private subnets  | Network boundary for cluster resources              | Terraform complete; not applied |
-| Security groups          | Cluster and worker traffic boundaries               | Terraform complete; not applied |
-| Amazon ECR               | Private image registry                              | Terraform complete; not applied |
-| IAM roles                | EKS and node permissions                            | Terraform complete; not applied |
-| GitHub OIDC role         | Short-lived CI authentication to AWS                | Planned |
-| Amazon EKS               | Managed Kubernetes control plane                    | Terraform complete; not applied |
-| EC2 managed node group   | Runs the application and Falco with host visibility | Terraform complete; egress pending |
-| CloudWatch Logs          | EKS-managed control-plane log destination           | EKS configured; retention review pending |
+| VPC and private subnets  | Network boundary for cluster resources              | Applied; no NAT route |
+| Security groups          | Cluster and worker traffic boundaries               | Applied; egress hardening remains open |
+| Amazon ECR               | Private image registry                              | Applied; scanned candidate image published |
+| IAM roles                | EKS/node definitions and CI-plan permissions        | Applied; EKS/node roles unused while feature flags are off |
+| GitHub OIDC plan role    | Short-lived Terraform-plan authentication to AWS    | Applied and validated in GitHub Actions |
+| VPC Flow Logs            | Network observability                               | Applied with customer-managed KMS encryption and 365-day retention |
+| Amazon EKS               | Managed Kubernetes control plane                    | Defined, not created (`enable_eks = false`) |
+| EC2 managed node group   | Runs the application and Falco with host visibility | Defined, not created (`enable_eks_node_group = false`) |
 
 ## Trust boundaries
 
@@ -65,4 +65,4 @@ Ingress, public application exposure, and HTTPS are intentionally deferred. Init
 
 ## Security-control lifecycle
 
-Trivy is the pre-deployment security gate: an image is built, scanned, and approved before its immutable ECR digest is deployed. Falco is the post-deployment runtime control: it observes the running workload and supplies investigation evidence. See [Security controls: Trivy and Falco](security-controls.md) for the required policy, exercises, and evidence.
+Trivy produces retained CI evidence and supports documented vulnerability triage. A blocking HIGH/CRITICAL gate is intentionally outside this portfolio lab's scope; it would be required and risk-owned in a production service. Falco has been validated on Kind through a controlled interactive-shell alert. See [Security controls: Trivy and Falco](security-controls.md) for the policy, exercises, and evidence.

@@ -83,3 +83,8 @@ CloudWatch Logs and Systems Manager endpoints will be added when those capabilit
 
 The endpoint security group currently relies on implicit default outbound behavior during the lab phase. This is a temporary exception to be replaced with explicit, least-privilege egress rules after endpoint connectivity is verified.
 
+## D-012: Separate Terraform planning from ECR publication identity
+
+**Decision:** Use distinct GitHub OIDC roles and protected environments for Terraform planning and container publication.
+
+**Rationale:** A plan-only identity needs remote-state access and read-only AWS discovery. An image publisher instead needs permission to obtain an ECR authorization token and upload layers/manifests to one repository. Combining them would increase the impact of a compromised workflow or mistaken configuration. Terraform apply remains disabled and will require a third, separately reviewed role and approval path.

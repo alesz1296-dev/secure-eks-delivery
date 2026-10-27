@@ -76,8 +76,10 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 - [x] Run a manual Gitleaks directory scan; current working tree returned no leaks after excluding generated scan reports.
 - [x] Run a manual Checkov Terraform baseline and record the 89 passing checks and open findings in `docs/checkov-baseline.md`.
 - [x] Validate the PR-validation, Terraform-plan, and container evidence workflows. Terraform apply remains intentionally disabled.
-- [ ] Apply the separate ECR publisher OIDC role and configure the protected `container-delivery` environment with `AWS_ROLE_ARN` and `ECR_REPOSITORY` variables.
-- [ ] Dispatch the ECR publisher workflow and retain evidence of the immutable `git-<SHA>` and `build-<run-number>` tags resolving to the recorded digest.
+- [x] Separate Terraform backend access by workflow: PR validation uses `-backend=false`; the trusted OIDC plan workflow uses the remote S3 backend.
+- [x] Apply the separate ECR publisher OIDC role.
+- [x] Configure the protected `container-delivery` environment with `AWS_ROLE_ARN` and `ECR_REPOSITORY` variables.
+- [x] Dispatch the ECR publisher workflow and retain evidence of the immutable tags resolving to the recorded digest: `build-6` and `git-69cfec2b320f58b4be612fafb568533270979269` both resolve to `sha256:df00c79558a2ebf82d978415686c860c2c483258d202a3cb594479eb2965f67f`.
 - [x] Install pre-commit and validate the local hooks for formatting, Gitleaks, Terraform, TFLint, Checkov, and actionlint. The complete `pre-commit run --all-files` suite passed locally.
 - [x] Run TFLint manually against `infra/`; plugins initialized and the configuration returned no findings.
 - [x] Run actionlint 1.7.12 manually against all three workflows; the workflow files returned no findings.

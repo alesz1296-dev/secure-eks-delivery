@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: secure-eks-delivery-kind
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: secure-eks-delivery
+    app.kubernetes.io/part-of: secure-eks-delivery
+    app.kubernetes.io/component: gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/alesz1296-dev/secure-eks-delivery.git
+    # This branch is the local validation environment. Change to main after merge.
+    targetRevision: validate-github-actions
+    path: kubernetes/overlays/kind
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: secure-eks-delivery
+  revisionHistoryLimit: 5
+  syncPolicy:
+    automated:
+      # Keep deletion manual until GitOps pruning has been rehearsed safely.
+      prune: false
+      selfHeal: true

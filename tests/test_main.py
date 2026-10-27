@@ -17,6 +17,14 @@ def test_health_endpoints() -> None:
     assert client.get("/health/ready").json() == {"status": "ready"}
 
 
+def test_metrics_endpoint() -> None:
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert "http_requests_total" in response.text
+    assert "http_request_duration_seconds" in response.text
+
+
 def test_create_task() -> None:
     response = client.post("/api/tasks", json={"title": "Deploy securely"})
 

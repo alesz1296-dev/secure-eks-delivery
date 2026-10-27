@@ -12,5 +12,7 @@ resources:
   - networkpolicy-allow-dns.yaml
   - network-allow-api.yaml
   - networkpolicy-allow-api-client-egress.yaml #allow rules for api-client pods to access the application on port 8080
+  - networkpolicy-allow-prometheus.yaml
   - resource-quota.yaml
   - limit-range.yaml
+  - servicemonitor.yaml

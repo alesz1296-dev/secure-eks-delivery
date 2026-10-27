@@ -2,11 +2,25 @@
 
 from itertools import count
 from os import getenv
+from time import perf_counter
 
-from fastapi import FastAPI, status
+from fastapi import FastAPI, Request, status
+from prometheus_client import Counter, Histogram, make_asgi_app
 from pydantic import BaseModel, Field
 
 APP_VERSION = getenv("APP_VERSION", "dev")
+
+HTTP_REQUESTS = Counter(
+    "http_requests_total",
+    "Total HTTP requests handled by the API.",
+    ["method", "path", "status_code"],
+)
+
+HTTP_REQUEST_DURATION = Histogram(
+    "http_request_duration_seconds",
+    "Time spent handling HTTP requests.",
+    ["method", "path"],
+)
 
 app = FastAPI(
     title="Secure EKS Delivery Lab API",
@@ -14,6 +28,40 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url=None,
 )
+
+
+@app.middleware("http")
+async def record_http_metrics(request: Request, call_next):
+    """Record request count and duration for Prometheus."""
+    if request.url.path == "/metrics":
+        return await call_next(request)
+
+    started_at = perf_counter()
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        HTTP_REQUESTS.labels(
+            method=request.method,
+            path=request.url.path,
+            status_code="500",
+        ).inc()
+        raise
+
+    HTTP_REQUESTS.labels(
+        method=request.method,
+        path=request.url.path,
+        status_code=str(response.status_code),
+    ).inc()
+    HTTP_REQUEST_DURATION.labels(
+        method=request.method,
+        path=request.url.path,
+    ).observe(perf_counter() - started_at)
+
+    return response
+
+
+app.mount("/metrics", make_asgi_app())
 
 
 class TaskCreate(BaseModel):

@@ -7,14 +7,18 @@ The emphasis is on learning by building: each stage is implemented, tested, docu
 ## Goals
 
 - Provision a cost-aware AWS foundation with Terraform.
-- Deploy a containerized web application to Amazon EKS using EC2 managed nodes.
-- Apply secure Kubernetes workload defaults: non-root execution, readiness probes, resource requests and limits, and least-privilege access.
-- Build a CI pipeline with GitHub Actions that tests, builds, scans, and publishes images.
-- Scan container images with Trivy, retain the evidence, and document vulnerability triage.
-- Deploy immutable image digests from Amazon ECR.
-- Detect and investigate suspicious container behavior using Falco.
-- Introduce Helm for repeatable packaging and Falco installation.
-- Introduce Argo CD for GitOps-based continuous delivery.
+- Model a production-like AWS delivery foundation with VPC networking, private subnets, security groups, ECR, KMS encryption, VPC Flow Logs, remote Terraform state, and cost-control flags.
+- Use GitHub OIDC with separate least-privilege roles for Terraform planning and ECR publication, without long-lived AWS credentials.
+- Build a reproducible, hardened FastAPI container using a multi-stage build, locked and hash-verified dependencies, a digest-pinned base image, non-root UID/GID `10001`, dropped capabilities, and no runtime package manager.
+- Apply secure Kubernetes workload defaults: non-root execution, read-only root filesystem, RuntimeDefault seccomp, disabled service-account token automount, probes, resource requests and limits, ResourceQuota, LimitRange, and least-privilege RBAC.
+- Enforce namespace isolation with Pod Security Admission and Cilium NetworkPolicies.
+- Build a production-shaped GitHub Actions pipeline with separate PR validation, Terraform plan, and container-delivery workflows.
+- Run pre-commit and CI quality checks with Ruff, pytest, pip-audit, Terraform validation, TFLint, Checkov, Gitleaks, and Actionlint.
+- Build `linux/amd64` images, scan them with Trivy, retain SARIF evidence, and generate CycloneDX SBOMs.
+- Publish reviewed images to ECR using immutable tags and deploy by immutable image digest.
+- Document scanner triage, SBOM provenance discrepancies, accepted lab risk, and remediation workflows.
+- Install Falco with Helm on Kind, generate controlled runtime events, and investigate the resulting alerts.
+- Define the next delivery stages: Falco Talon response integration, Helm packaging, Argo CD GitOps reconciliation, and eventual EKS deployment.
 
 ## Architecture
 
@@ -39,49 +43,66 @@ Later: Helm packages workloads and Falco; Argo CD reconciles declared Git state 
 
 ## Security scope
 
-Trivy and Falco serve different purposes:
+The project demonstrates layered controls across source, infrastructure, artifacts,
+Kubernetes, and runtime:
 
-| Tool  | Purpose                                                                                    |
-| ----- | ------------------------------------------------------------------------------------------ |
-| Trivy | Finds known vulnerabilities (CVEs) in container images and dependencies before deployment. |
-| Falco | Detects suspicious behavior while containers are running.                                  |
+| Area | Tools or controls | Purpose |
+| --- | --- | --- |
+| Source and workflow hygiene | Gitleaks, Actionlint, pre-commit | Detect secrets and invalid or unsafe workflow changes before merge. |
+| Application quality | Ruff, pytest, pip-audit, locked dependencies | Check code quality, behavior, and Python dependency risk. |
+| Infrastructure as code | Terraform validation, TFLint, Checkov | Validate Terraform and identify insecure AWS configuration. |
+| Container security | Hardened multi-stage Dockerfile, Trivy | Reduce runtime attack surface and identify known image vulnerabilities. |
+| Artifact provenance | CycloneDX SBOM, immutable ECR tags, image digests | Record what was built and deploy the exact reviewed artifact. |
+| Cloud identity | GitHub OIDC, scoped IAM roles, protected environments | Avoid long-lived AWS keys and separate plan from image-publication permissions. |
+| Kubernetes governance | RBAC, Pod Security Admission, ResourceQuota, LimitRange, seccomp, NetworkPolicies | Limit workload permissions, resources, privileges, and network reachability. |
+| Runtime detection | Falco on Kind | Detect suspicious process and shell activity in running containers. |
+
+Trivy and Falco serve different purposes: Trivy finds known vulnerabilities before
+deployment; Falco detects suspicious behavior while containers are running.
 
 Portfolio-lab scan policy: retain Trivy evidence in CI and document material findings. This project intentionally does **not** block delivery on HIGH or CRITICAL findings because its focus is demonstrating the wider delivery, identity, Kubernetes, and runtime-detection lifecycle. A real production service should add a risk-approved vulnerability gate with ownership, remediation deadlines, and exceptions.
 
-## Learning roadmap
+## Development roadmap
 
-### Stage 1 — Infrastructure and application deployment
+### Stage 1 — Infrastructure and application baseline
 
 - [x] Provision and validate the AWS foundation: VPC, private subnets, security groups, ECR, IAM, VPC Flow Logs, remote state, and a GitHub OIDC plan role.
-- [ ] Provision EKS and managed nodes. They remain disabled by cost-control feature flags.
-- [ ] Use EC2-backed EKS managed nodes to support host-visible Falco runtime detection.
+- [x] Keep EKS, managed nodes, NAT, endpoints, and ingress behind explicit cost-control flags.
+- [x] Design EC2-backed EKS managed nodes to support host-visible Falco runtime detection.
 - [x] Build and harden the FastAPI container.
-- [x] Deploy and verify it locally on Kind with a Deployment, Service, health probes, ResourceQuota, LimitRange, RBAC baseline, Pod Security Admission, and Cilium NetworkPolicies.
+- [x] Deploy and verify it locally on Kind with a Deployment, Service, health probes, ResourceQuota, LimitRange, least-privilege RBAC, Pod Security Admission, and Cilium NetworkPolicies.
 - [x] Verify the workload through `kubectl port-forward` before adding ingress or HTTPS.
+- [x] Run the workload as UID/GID `10001`, with a read-only root filesystem, dropped capabilities, RuntimeDefault seccomp, and disabled service-account token automount.
 
-### Stage 2 — Secure CI delivery
+### Stage 2 — Secure CI delivery and artifact provenance
 
-- [x] Run infrastructure and secret/IaC checks in GitHub Actions.
+- [x] Run infrastructure and secret/IaC checks in GitHub Actions: Terraform validation, TFLint, Checkov, Gitleaks, and Actionlint.
+- [x] Run application quality checks: Ruff, pytest, pip-audit, and dependency-lock verification.
 - [x] Build and scan a `linux/amd64` image with Trivy and retain SARIF evidence as a workflow artifact.
+- [x] Generate and retain a CycloneDX SBOM for the image.
 - [x] Authenticate the Terraform plan workflow to AWS through GitHub OIDC; no long-lived AWS key is stored in GitHub.
 - [x] Publish a scanned candidate image to ECR and deploy it locally by immutable digest.
-- [ ] Automate ECR publication and an EKS deployment only after a dedicated application delivery role and protected environment are configured.
+- [x] Create a separate, least-privilege OIDC role and protected `container-delivery` environment for ECR publication.
+- [ ] Complete and verify the end-to-end ECR publication run from GitHub Actions.
+- [ ] Keep Terraform apply disabled until a separate production role and approval environment are configured.
 
-### Stage 3 — Vulnerability remediation exercise
+### Stage 3 — Security validation and vulnerability remediation
 
 - [ ] Introduce or select an older image with a fixable vulnerability.
 - [ ] Capture the failing Trivy report.
 - [ ] Update the vulnerable application dependency or base image.
 - [ ] Rebuild, rescan, and compare the reports.
 - [ ] Record the successful rollout of the patched image.
+- [x] Document the portfolio policy that Trivy findings remain visible as SARIF evidence but do not block this lab's delivery gate.
+- [x] Record SBOM-only package discrepancies as provenance investigations rather than confirmed runtime vulnerabilities.
 
-### Stage 4 — Runtime detection with Helm
+### Stage 4 — Runtime detection and response
 
 - [x] Install Falco using its Helm chart on Kind and generate a controlled shell event.
 - [x] Inspect the resulting alert: rule, process, container, pod, and response.
-- [ ] Document mitigation and cleanup.
+- [ ] Document mitigation and cleanup, including a Falco Talon response path for future notification or containment integration.
 
-### Stage 5 — GitOps with Argo CD (later)
+### Stage 5 — GitOps with Argo CD
 
 - [ ] Package the application configuration with Helm.
 - [ ] Install Argo CD and connect it to a dedicated GitOps path or repository.
@@ -141,7 +162,7 @@ The active CI path is split deliberately:
 
 - **Pull request validation:** formatting, Terraform validation, TFLint, Checkov (with three documented KMS-policy model exclusions), and Gitleaks.
 - **Terraform deployment:** manually dispatched, OIDC-authenticated, remote-state **plan only**; apply is intentionally disabled.
-- **Container delivery:** a defined gated workflow runs quality checks, Gitleaks, `linux/amd64` build, Trivy SARIF evidence, a CycloneDX SBOM, and—after protected-environment approval—ECR publication by immutable tags. The publisher role/environment still need to be applied and configured.
+- **Container delivery:** a defined gated workflow runs quality checks, Gitleaks, `linux/amd64` build, Trivy SARIF evidence, a CycloneDX SBOM, and—after protected-environment approval—ECR publication by immutable tags. The publisher IAM role is applied; the GitHub environment configuration and successful publication run remain to be verified.
 
 Local pre-commit checks, the GitHub PR workflow, the OIDC Terraform plan workflow, and the container evidence workflow have all been validated. See [the task backlog](docs/tasks.md) for remaining platform work.
 

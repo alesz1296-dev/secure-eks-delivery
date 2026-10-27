@@ -62,4 +62,3 @@ def create_task(task: TaskCreate) -> Task:
     new_task = Task(id=next(task_ids), title=task.title)
     tasks.append(new_task)
     return new_task
-

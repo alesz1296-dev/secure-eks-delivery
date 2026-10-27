@@ -49,3 +49,14 @@ output "eks_node_role_arn" {
 output "eks_node_instance_profile_name" {
   value = aws_iam_instance_profile.eks_nodes.name
 }
+
+#OIDC
+output "github_terraform_plan_role_arn" {
+  description = "OIDC role ARN for the protected terraform-plan environment."
+  value       = var.enable_github_oidc ? aws_iam_role.github_terraform_plan[0].arn : null
+}
+
+output "github_container_delivery_role_arn" {
+  description = "OIDC role ARN for the protected container-delivery environment."
+  value       = var.enable_github_oidc ? aws_iam_role.github_container_delivery[0].arn : null
+}

@@ -6,11 +6,11 @@ The project is based of course, on Terraform provisions the AWS foundation, with
 
 Helm and Argo CD will be introduced later, after the manual deployment path is done. Alternatively, I'm also planning a KIND (k8s in docker) deployment as a second option :)
 
-![Secure EKS Delivery Lab architecture](architecture-recreated.png)
+![Secure EKS Delivery Lab architecture](images/architecture-recreated.png)
 
 The security-group relationships are documented separately in this companion diagram:
 
-![EKS security groups](security-groups-diagram.png)
+![EKS security groups](images/security-groups-diagram.png)
 
 ## What is already in place as of today
 

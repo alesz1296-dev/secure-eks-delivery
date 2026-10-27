@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-This document is the implementation documentation for the Terraform portion of the Secure EKS Delivery Lab. It defines the target state and the order in which to build it. No AWS infrastructure is deployed yet.
+This document is the implementation documentation for the Terraform portion of the Secure EKS Delivery Lab. The remote-state bootstrap and low-cost AWS foundation are applied. EKS, its node group, NAT Gateway, private interface endpoints, ingress, and public workload exposure remain disabled.
 
 The target platform is **Amazon EKS with EC2 managed nodes**. Amazon ECS is out of scope; add it only as a separate comparison exercise.
 
@@ -128,11 +128,7 @@ Compare the expected session duration and required AWS services before choosing.
 
 Configure immutable tags where practical, scan-on-push as defense in depth, and a lifecycle policy that removes old lab images. Trivy remains the primary build gate.
 
-The baseline may use AWS-managed AES256 encryption for the lab. Customer-managed
-KMS encryption is an optional hardening decision: it adds explicit key ownership,
-rotation, and audit control, but also adds key-policy complexity and ongoing KMS
-cost. If selected, define the key policy deliberately and review Checkov's KMS
-policy findings rather than removing the account recovery administrator blindly.
+The implemented baseline uses customer-managed KMS keys for ECR and VPC Flow Logs, with rotation enabled. Key policies retain account-root break-glass administration and constrain service use with `kms:ViaService`; CloudWatch Logs is additionally constrained by its encryption context. These direct key-policy patterns trigger Checkov's generic `CKV_AWS_109`, `CKV_AWS_111`, and `CKV_AWS_356` heuristics, so CI and pre-commit exclude only those three checks with the rationale in [the Checkov baseline](checkov-baseline.md).
 
 ### GitHub OIDC resources
 
@@ -140,7 +136,7 @@ policy findings rather than removing the account recovery administrator blindly.
 - `aws_iam_role` for CI
 - `aws_iam_role_policy` or managed-policy attachments scoped to the project ECR repository
 
-First CI-role scope: authenticate through OIDC and push images to the project ECR repository. Do not grant Kubernetes administration or broad account permissions at this stage.
+The applied first CI role is **plan-only**. Its trust policy requires the exact GitHub Actions subject for the protected `terraform-plan` environment, and it has remote-state access plus temporary AWS read-only permissions required for Terraform refresh and planning. It cannot apply infrastructure or publish images. A separate application delivery role and protected environment are required before automated ECR publication or deployment.
 
 ## Phase 4: EKS control plane
 

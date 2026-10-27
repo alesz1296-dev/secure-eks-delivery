@@ -22,6 +22,8 @@ trivy-*.log
 gitleaks-*.json
 gitleaks-*.sarif
 checkov-*.json
+artifacts/
+.pre-commit-cache/
 trivy-*.json
 trivy-*.log
 gitleaks-*.sarif

@@ -55,8 +55,8 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 - [ ] Investigate the four grouped Python findings reported only through third-party SBOM metadata (`msgpack 1.1.2`, `setuptools 70.3.0`, and `urllib3 2.7.0`). They are not present in the final runtime filesystem; preserve the Trivy report and verify the SBOM provenance before changing application dependencies.
 - [x] Record the selected pinned Trixie digest and the before/after scan comparison in `docs/vulnerability-baseline.md`.
 
-- [ ] Define and document the Trivy gate: fail on fixable HIGH and CRITICAL findings.
-- [ ] Retain Trivy reports as GitHub Actions artifacts.
+- [x] Define the portfolio-lab Trivy policy: retain SARIF evidence and triage findings; a blocking HIGH/CRITICAL gate is intentionally out of scope for this project and belongs to a production release policy.
+- [x] Retain Trivy reports as GitHub Actions artifacts through the Container delivery workflow.
 - [x] Configure deployment to use the scanned ECR image digest and verify the running workload.
 - [x] Install Falco using Helm after the workload is stable.
 - [x] Run and document a controlled Falco interactive-shell detection exercise.
@@ -67,15 +67,17 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 
 ## Identity and pipeline security
 
-- [ ] Create a GitHub OIDC provider and a repository- and environment-scoped deployment role.
-- [ ] Do not use long-lived AWS access keys in GitHub Actions.
-- [ ] Set minimum `GITHUB_TOKEN` permissions per workflow and job.
-- [ ] Pin third-party GitHub Actions to full commit SHAs.
+- [x] Create the GitHub OIDC provider and an exact-subject, environment-scoped Terraform plan role.
+- [x] Do not use long-lived AWS access keys in the validated Terraform plan workflow.
+- [x] Set minimum `GITHUB_TOKEN` permissions per workflow and job.
+- [x] Pin third-party GitHub Actions to full commit SHAs and record the release tag in workflow comments.
 - [ ] Keep untrusted pull-request code away from deployment credentials and privileged runners.
-- [ ] Add Gitleaks secret detection and Checkov Terraform scanning.
+- [x] Add Gitleaks secret detection and Checkov Terraform scanning.
 - [x] Run a manual Gitleaks directory scan; current working tree returned no leaks after excluding generated scan reports.
 - [x] Run a manual Checkov Terraform baseline and record the 89 passing checks and open findings in `docs/checkov-baseline.md`.
-- [ ] Validate the separated `.github/workflows/pr-validation.yml`, `terraform-deploy.yml`, and `container-delivery.yml` workflows and retain their actionlint, Gitleaks, Checkov, TFLint, plan, apply, and image-scan evidence.
+- [x] Validate the PR-validation, Terraform-plan, and container evidence workflows. Terraform apply remains intentionally disabled.
+- [ ] Apply the separate ECR publisher OIDC role and configure the protected `container-delivery` environment with `AWS_ROLE_ARN` and `ECR_REPOSITORY` variables.
+- [ ] Dispatch the ECR publisher workflow and retain evidence of the immutable `git-<SHA>` and `build-<run-number>` tags resolving to the recorded digest.
 - [x] Install pre-commit and validate the local hooks for formatting, Gitleaks, Terraform, TFLint, Checkov, and actionlint. The complete `pre-commit run --all-files` suite passed locally.
 - [x] Run TFLint manually against `infra/`; plugins initialized and the configuration returned no findings.
 - [x] Run actionlint 1.7.12 manually against all three workflows; the workflow files returned no findings.
@@ -96,7 +98,7 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 - [x] Define and enforce a Pod Security Admission baseline or restricted policy.
 - [x] Add NetworkPolicies and demonstrate that unauthorized pod-to-pod traffic is denied.
 - [x] Keep the application ServiceAccount token disabled because the workload has no Kubernetes API requirement.
-- [ ] Add an SBOM and retain it with the image build evidence.
+- [x] Generate a CycloneDX SBOM from the built image and retain it with the Trivy evidence artifact in the container-delivery workflow.
 - [ ] Review application authorization and test that unauthorized actions are denied.
 - [ ] Evaluate CloudTrail and GuardDuty for a controlled cloud-security exercise.
 - [ ] Record dependency provenance from source lockfile to image digest.

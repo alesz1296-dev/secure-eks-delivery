@@ -2,30 +2,126 @@ name: Container delivery
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "Dockerfile"
+      - "requirements.lock"
+      - "pyproject.toml"
+      - ".github/workflows/container-delivery.yml"
 
+# No repository write permission is required. The publish job requests an OIDC
+# token only after validation succeeds and the protected environment permits it.
 permissions:
   contents: read
 
 jobs:
-  build-and-scan:
-    name: Build, scan, and publish evidence
+  quality:
+    name: Application quality and dependency checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.13"
+      - name: Install locked runtime dependencies and test tools
+        run: |
+          python -m pip install --disable-pip-version-check --only-binary :all: --require-hashes -r requirements.lock
+          python -m pip install --disable-pip-version-check --only-binary :all: pytest==8.3.5 httpx==0.28.1 ruff==0.9.10 pip-audit==2.9.0
+      - name: Lint Python
+        run: ruff check app tests
+      - name: Run unit tests
+        run: pytest -q
+      - name: Audit locked Python dependencies
+        run: pip-audit -r requirements.lock
+
+  secrets:
+    name: Secret detection
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-scan-publish:
+    name: Build, scan, and publish immutable image
+    needs: [quality, secrets]
+    runs-on: ubuntu-latest
+    environment: container-delivery
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: us-east-1
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Build linux/amd64 image
-        run: docker build --platform linux/amd64 -t secure-eks-delivery:ci .
+        run: |
+          docker build --platform linux/amd64 \
+            --tag secure-eks-delivery:ci \
+            .
       - name: Scan image with Trivy
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: secure-eks-delivery:ci
           format: sarif
           output: trivy-results.sarif
           severity: HIGH,CRITICAL
           ignore-unfixed: false
-      - uses: actions/upload-artifact@v4
+          exit-code: "0"
+      - name: Generate CycloneDX image SBOM
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: secure-eks-delivery:ci
+          format: cyclonedx
+          output: image-sbom.cdx.json
+          exit-code: "0"
+      - name: Upload Trivy and SBOM evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: container-security-evidence-${{ github.sha }}
-          path: trivy-results.sarif
+          path: |
+            trivy-results.sarif
+            image-sbom.cdx.json
           retention-days: 14
-      # Add OIDC authentication and ECR push only after the application role
-      # and protected deployment environment are configured.
+      - name: Configure AWS credentials through OIDC
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Verify publisher identity and repository
+        run: |
+          aws sts get-caller-identity
+          aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" --region "$AWS_REGION"
+      - name: Log in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@4625ce35226a7557230889aae2f52eb50ec3dcda # v2.0.1
+      - name: Tag and publish immutable image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          GIT_TAG: git-${{ github.sha }}
+          BUILD_TAG: build-${{ github.run_number }}
+        run: |
+          IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY"
+          docker tag secure-eks-delivery:ci "$IMAGE:$GIT_TAG"
+          docker tag secure-eks-delivery:ci "$IMAGE:$BUILD_TAG"
+          docker push "$IMAGE:$GIT_TAG"
+          docker push "$IMAGE:$BUILD_TAG"
+      - name: Record immutable ECR digest
+        env:
+          GIT_TAG: git-${{ github.sha }}
+        run: |
+          DIGEST=$(aws ecr describe-images \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="$GIT_TAG" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text \
+            --region "$AWS_REGION")
+          echo "### Published image" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`$ECR_REPOSITORY:$GIT_TAG@$DIGEST\`" >> "$GITHUB_STEP_SUMMARY"

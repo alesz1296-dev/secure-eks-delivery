@@ -146,7 +146,7 @@ jobs:
       - name: Verify signature and SBOM attestation
         env:
           IMAGE_REF: ${{ steps.published-image.outputs.image_ref }}
-          CERTIFICATE_IDENTITY: https://github.com/alesz1296-dev/secure-eks-delivery/.github/workflows/container-delivery.yml@refs/heads/main
+          CERTIFICATE_IDENTITY: https://github.com/${{ github.repository }}/.github/workflows/container-delivery.yml@${{ github.ref }}
           CERTIFICATE_ISSUER: https://token.actions.githubusercontent.com
         run: |
           cosign verify \

@@ -118,9 +118,10 @@ SBOM-only Python provenance findings. This is a deliberate portfolio-lab
 choice, not an unfinished requirement. A production service should make its
 blocking threshold and exception process explicit before release.
 
-## ECR publisher pipeline design
+## ECR publisher and provenance pipeline
 
-The next container-delivery revision separates validation from AWS publication:
+The container-delivery workflow separates validation from AWS publication and
+then binds the resulting digest to its CI identity:
 
 ```text
 quality checks + Gitleaks
@@ -130,9 +131,12 @@ quality checks + Gitleaks
   -> protected GitHub environment approval
   -> GitHub OIDC publisher role
   -> ECR immutable tags and recorded digest
+  -> keyless Cosign signature
+  -> CycloneDX SBOM attestation
+  -> identity-based verification evidence
 ```
 
-The `quality` job runs Ruff, pytest, and `pip-audit` against the locked runtime requirements. The `secrets` job runs Gitleaks. The publish job runs only after both complete successfully and the `container-delivery` GitHub environment is available. It uploads a Trivy SARIF report and a CycloneDX SBOM generated from the built image as the same retained evidence artifact.
+The `quality` job runs Ruff, pytest, and `pip-audit` against the locked runtime requirements. The `secrets` job runs Gitleaks. The publish job runs only after both complete successfully and the `container-delivery` GitHub environment is available. It uploads a Trivy SARIF report and a CycloneDX SBOM generated from the built image as retained evidence.
 
 The publisher role is separate from the Terraform plan role. It has only `ecr:GetAuthorizationToken` plus layer-upload and `PutImage` permissions for the one project repository. It cannot apply Terraform, change IAM, or administer EKS. AWS requires `GetAuthorizationToken` to use `Resource: "*"`; the remaining ECR actions are repository-scoped.
 
@@ -146,3 +150,9 @@ Before dispatching the workflow, apply the Terraform role and configure these **
 The environment should restrict deployments to `main` and require approval if the repository plan supports it. Its OIDC subject must match the value supplied to `github_container_delivery_oidc_subject`; inspect an Actions token first if the repository uses customized OIDC subject claims.
 
 Current status: the ECR publisher role and protected environment are configured, and the first successful publication has been verified. The immutable `build-6` and `git-69cfec2b320f58b4be612fafb568533270979269` tags resolve to `sha256:df00c79558a2ebf82d978415686c860c2c483258d202a3cb594479eb2965f67f` in `secure-eks-delivery-dev-fastapi`.
+
+The keyless signing and attestation steps are implemented on `test`. They use
+the GitHub Actions OIDC identity—no stored Cosign key or signing secret—and
+verify the expected `main` workflow identity and GitHub issuer. Before treating
+this as a completed provenance control, merge it to `main`, run the protected
+workflow, and retain the signature and attestation verification JSON artifact.

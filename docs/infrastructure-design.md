@@ -136,7 +136,14 @@ The implemented baseline uses customer-managed KMS keys for ECR and VPC Flow Log
 - `aws_iam_role` for CI
 - `aws_iam_role_policy` or managed-policy attachments scoped to the project ECR repository
 
-The applied first CI role is **plan-only**. Its trust policy requires the exact GitHub Actions subject for the protected `terraform-plan` environment, and it has remote-state access plus temporary AWS read-only permissions required for Terraform refresh and planning. It cannot apply infrastructure or publish images. A separate application delivery role and protected environment are required before automated ECR publication or deployment.
+The applied first CI role is **plan-only**. Its trust policy requires the exact GitHub Actions subject for the protected `terraform-plan` environment, and it has remote-state access plus temporary AWS read-only permissions required for Terraform refresh and planning. It cannot apply infrastructure or publish images.
+
+A second, protected `container-delivery` environment assumes a separate
+publisher role. Its permissions are limited to ECR authentication and the
+repository-scoped image operations required to publish the project image. The
+container workflow now resolves the immutable digest, signs it with keyless
+Cosign, and attests its CycloneDX SBOM. Terraform apply remains disabled and
+will require a third, separately reviewed production role and approval path.
 
 ## Phase 4: EKS control plane
 
@@ -183,7 +190,8 @@ Do not implement application Kubernetes resources in Terraform initially.
 4. Build GitHub Actions testing, image build, Trivy scanning, report retention, and ECR publication.
 5. Convert the workload to a Helm chart.
 6. Install Falco with Helm; run controlled detection exercises.
-7. Add Argo CD only after the Helm path is understood and repeatable.
+7. Reconcile the Kind `test` environment through Argo CD; use the successful
+   local workflow as the basis for later staging, production, and EKS promotion.
 
 See [Security controls: Trivy and Falco](security-controls.md) for the security-gate and runtime-detection requirements.
 

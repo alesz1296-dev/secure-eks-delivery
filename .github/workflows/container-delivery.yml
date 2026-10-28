@@ -116,7 +116,9 @@ jobs:
           docker push "$IMAGE:$GIT_TAG"
           docker push "$IMAGE:$BUILD_TAG"
       - name: Record immutable ECR digest
+        id: published-image
         env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           GIT_TAG: git-${{ github.sha }}
         run: |
           DIGEST=$(aws ecr describe-images \
@@ -125,5 +127,44 @@ jobs:
             --query 'imageDetails[0].imageDigest' \
             --output text \
             --region "$AWS_REGION")
+          IMAGE_REF="$ECR_REGISTRY/$ECR_REPOSITORY@$DIGEST"
+          echo "image_ref=$IMAGE_REF" >> "$GITHUB_OUTPUT"
           echo "### Published image" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`$ECR_REPOSITORY:$GIT_TAG@$DIGEST\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "\`$IMAGE_REF\`" >> "$GITHUB_STEP_SUMMARY"
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v3.1.4
+      - name: Sign immutable image digest with GitHub OIDC
+        env:
+          IMAGE_REF: ${{ steps.published-image.outputs.image_ref }}
+        run: cosign sign --yes "$IMAGE_REF"
+      - name: Attach CycloneDX SBOM attestation
+        env:
+          IMAGE_REF: ${{ steps.published-image.outputs.image_ref }}
+        run: cosign attest --yes --type cyclonedx --predicate image-sbom.cdx.json "$IMAGE_REF"
+      - name: Verify signature and SBOM attestation
+        env:
+          IMAGE_REF: ${{ steps.published-image.outputs.image_ref }}
+          CERTIFICATE_IDENTITY: https://github.com/alesz1296-dev/secure-eks-delivery/.github/workflows/container-delivery.yml@refs/heads/main
+          CERTIFICATE_ISSUER: https://token.actions.githubusercontent.com
+        run: |
+          cosign verify \
+            --certificate-identity "$CERTIFICATE_IDENTITY" \
+            --certificate-oidc-issuer "$CERTIFICATE_ISSUER" \
+            --output json \
+            "$IMAGE_REF" > cosign-signature.json
+          cosign verify-attestation \
+            --type cyclonedx \
+            --certificate-identity "$CERTIFICATE_IDENTITY" \
+            --certificate-oidc-issuer "$CERTIFICATE_ISSUER" \
+            --output json \
+            "$IMAGE_REF" > cosign-sbom-attestation.json
+      - name: Upload Cosign provenance evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: cosign-provenance-evidence-${{ github.sha }}
+          path: |
+            cosign-signature.json
+            cosign-sbom-attestation.json
+          retention-days: 14

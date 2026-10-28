@@ -15,10 +15,10 @@ Threat model -> prevent -> detect before deployment -> detect at runtime
 | --- | --- | --- | --- |
 | 1 | Identity and secrets | GitHub Actions OIDC role scoped to this repository and deployment environment; least-privilege IAM; Kubernetes RBAC | Trust policy review and successful short-lived credential workflow |
 | 2 | CI/CD security | Minimal `GITHUB_TOKEN` permissions; SHA-pinned actions; protected deployment environment; Gitleaks, Checkov, SonarQube, Trivy | Blocked test finding, SonarQube quality-gate result, and saved workflow artifacts |
-| 3 | Container and Kubernetes hardening | Non-root image, dropped capabilities, read-only root filesystem where compatible, seccomp, Pod Security Admission, NetworkPolicies | Rejected privileged workload and blocked unauthorized pod traffic |
+| 3 | Container and Kubernetes hardening | Non-root image, dropped capabilities, read-only root filesystem, seccomp, Pod Security Admission, Kyverno, NetworkPolicies | PSA/Kyverno rejected workload and blocked unauthorized pod traffic |
 | 4 | Vulnerability management | Finding triage, remediation deadlines, documented exceptions, rebuild and redeploy by digest | Before/after Trivy reports and deployed fixed digest |
 | 5 | Cloud security and detection | CloudTrail, GuardDuty evaluation, EKS audit logs, security-group review, public-exposure checks | Simulated event investigation and containment notes |
-| 6 | Application and supply chain | Authorization review, SBOM, dependency provenance, artifact traceability, optional signing | Traceable build artifact and documented authorization test |
+| 6 | Application and supply chain | Authorization review, SBOM, dependency provenance, immutable digest, keyless Cosign signing and attestation | Traceable build artifact, verified workflow identity, and documented authorization test |
 
 ## Pipeline hardening baseline
 
@@ -28,7 +28,7 @@ Threat model -> prevent -> detect before deployment -> detect at runtime
 - Pin third-party GitHub Actions to full commit SHAs.
 - Do not expose deployment secrets or privileged runners to untrusted pull-request code.
 - Require review for deployment-environment changes.
-- Run Gitleaks, Checkov, application tests, SonarQube, and Trivy before an image can be published or deployed. For this portfolio lab, Trivy provides retained evidence and triage rather than a blocking vulnerability threshold; a production service must define and approve that threshold.
+- Run Gitleaks, Checkov, application tests, and Trivy before an image can be published or deployed. SonarQube is retained as a successful manual baseline rather than an active CI gate. For this portfolio lab, Trivy provides retained evidence and triage rather than a blocking vulnerability threshold; a production service must define and approve that threshold.
 
 ## Security-tool scope
 

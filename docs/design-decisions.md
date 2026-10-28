@@ -88,3 +88,21 @@ The endpoint security group currently relies on implicit default outbound behavi
 **Decision:** Use distinct GitHub OIDC roles and protected environments for Terraform planning and container publication.
 
 **Rationale:** A plan-only identity needs remote-state access and read-only AWS discovery. An image publisher instead needs permission to obtain an ECR authorization token and upload layers/manifests to one repository. Combining them would increase the impact of a compromised workflow or mistaken configuration. Terraform apply remains disabled and will require a third, separately reviewed role and approval path.
+
+## D-013: Disable the Terraform backend during pull-request validation
+
+**Decision:** Run `terraform init -backend=false` in the pull-request validation job. Enable the S3 backend only in the trusted OIDC-authenticated Terraform plan workflow.
+
+**Rationale:** Pull-request code is untrusted and should not receive credentials or access to remote state and state locks. Static validation does not require the backend. The deployment-plan workflow has a separate identity and is the correct place to read remote state.
+
+## D-014: Layer PSA with a project-specific Kyverno policy
+
+**Decision:** Enforce the Kubernetes Restricted Pod Security Admission profile and add a namespaced Kyverno policy that requires read-only root filesystems, dropped capabilities, disabled privilege escalation, and explicit CPU/memory resources.
+
+**Rationale:** PSA provides a standardized baseline, but it does not express every workload rule needed by this project. Kyverno makes those additional requirements auditable and enforceable at admission time. The policy was proven first in audit mode and then switched to deny mode using a controlled negative Pod.
+
+## D-015: Use keyless Cosign signing for published ECR digests
+
+**Decision:** Have the protected container-delivery workflow sign immutable ECR digests and attest their CycloneDX SBOMs using keyless Cosign and the GitHub Actions OIDC identity.
+
+**Rationale:** Keyless signing avoids storing a private signing key in the repository or CI secrets while still binding an artifact to an issuer, workflow identity, and source branch. Signature verification will be enforced by Kyverno only after the first successful `main` workflow run is independently captured as evidence.

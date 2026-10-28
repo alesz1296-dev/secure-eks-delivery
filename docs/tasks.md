@@ -98,13 +98,27 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 
 - [x] Add `runAsNonRoot`, dropped Linux capabilities, `allowPrivilegeEscalation: false`, and a read-only root filesystem where compatible.
 - [x] Define and enforce a Pod Security Admission baseline or restricted policy.
+- [x] Install Kyverno and enforce the `require-runtime-hardening` policy: containers must disable privilege escalation, use a read-only root filesystem, drop `ALL` capabilities, and set CPU/memory requests and limits.
+- [x] Demonstrate the Kyverno policy in audit mode, confirm its PolicyReport failure for a compliant-but-incomplete test pod, then switch to `Deny` and confirm admission rejection.
 - [x] Add NetworkPolicies and demonstrate that unauthorized pod-to-pod traffic is denied.
 - [x] Keep the application ServiceAccount token disabled because the workload has no Kubernetes API requirement.
 - [x] Generate a CycloneDX SBOM from the built image and retain it with the Trivy evidence artifact in the container-delivery workflow.
 - [ ] Review application authorization and test that unauthorized actions are denied.
 - [ ] Evaluate CloudTrail and GuardDuty for a controlled cloud-security exercise.
 - [ ] Record dependency provenance from source lockfile to image digest.
-- [ ] Evaluate artifact signing and verification as an optional supply-chain enhancement.
+- [ ] Verify the first keyless Cosign signing run: CI must sign the immutable ECR digest, attach the CycloneDX SBOM as an attestation, and retain successful verification evidence.
+- [ ] Add a Kyverno `ImageValidatingPolicy` after the trusted GitHub Actions certificate identity is captured from the first successful Cosign run.
+
+## GitOps, observability, and progressive delivery
+
+- [x] Install Prometheus/Grafana on the three-node Kind cluster.
+- [x] Add application Prometheus metrics, a `ServiceMonitor`, and a narrowly scoped NetworkPolicy that permits Prometheus scraping on TCP/8080.
+- [x] Verify application targets with `up{namespace="secure-eks-delivery"} == 1`.
+- [x] Install Argo CD and reconcile the Kind application from the `test` branch until it is `Synced` and `Healthy`.
+- [x] Install Argo Rollouts and configure a staged canary strategy.
+- [ ] Add an `AnalysisTemplate` using Prometheus success/error/latency signals.
+- [ ] Force a controlled failed release and retain evidence of rollout abort or rollback.
+- [ ] Define branch-protection and promotion rules for `test`, `staging`, and `production`.
 
 ## Local Kubernetes hardening follow-up
 
@@ -145,6 +159,6 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 
 ## Later platform tasks
 
-- [ ] Add resource requests and limits.
-- [ ] Package the workload as a Helm chart.
-- [ ] Introduce Argo CD only after the Helm deployment path is understood and verified.
+- [ ] Package the workload as a Helm chart only if it improves the already-tested Kustomize/GitOps workflow.
+- [ ] Create an EKS overlay that replaces Kind's local image and `imagePullPolicy: Never` with a signed immutable ECR digest.
+- [ ] Introduce EKS Pod Identity when the workload genuinely needs AWS APIs such as Secrets Manager, S3, or SQS.

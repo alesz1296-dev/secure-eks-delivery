@@ -17,3 +17,4 @@ resources:
   - resource-quota.yaml
   - limit-range.yaml
   - servicemonitor.yaml
+  - policy-require-runtime-hardening.yaml

@@ -1,0 +1,53 @@
+apiVersion: policies.kyverno.io/v1
+kind: NamespacedValidatingPolicy
+metadata:
+  name: require-runtime-hardening
+  namespace: secure-eks-delivery
+  annotations:
+    policies.kyverno.io/title: Require runtime hardening
+    policies.kyverno.io/category: Workload Security
+    policies.kyverno.io/severity: high
+spec:
+  # This policy requires that all containers in a pod have the following runtime hardening features enabled:
+  validationActions:
+    - Deny
+
+  evaluation:
+    admission:
+      enabled: true
+    background:
+      enabled: true
+    mode: Kubernetes
+
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+
+  validations:
+    - message: >-
+        Containers must disable privilege escalation, use a read-only root
+        filesystem, drop ALL capabilities, and define CPU and memory requests
+        and limits.
+      expression: >-
+        object.spec.containers.all(container,
+          has(container.securityContext) &&
+          has(container.securityContext.allowPrivilegeEscalation) &&
+          container.securityContext.allowPrivilegeEscalation == false &&
+          has(container.securityContext.readOnlyRootFilesystem) &&
+          container.securityContext.readOnlyRootFilesystem == true &&
+          has(container.securityContext.capabilities) &&
+          has(container.securityContext.capabilities.drop) &&
+          container.securityContext.capabilities.drop.exists(capability,
+            capability == 'ALL'
+          ) &&
+          has(container.resources) &&
+          has(container.resources.requests) &&
+          has(container.resources.limits) &&
+          'cpu' in container.resources.requests &&
+          'memory' in container.resources.requests &&
+          'cpu' in container.resources.limits &&
+          'memory' in container.resources.limits
+        )

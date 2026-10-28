@@ -11,14 +11,14 @@ The emphasis is on learning by building: each stage is implemented, tested, docu
 - Use GitHub OIDC with separate least-privilege roles for Terraform planning and ECR publication, without long-lived AWS credentials.
 - Build a reproducible, hardened FastAPI container using a multi-stage build, locked and hash-verified dependencies, a digest-pinned base image, non-root UID/GID `10001`, dropped capabilities, and no runtime package manager.
 - Apply secure Kubernetes workload defaults: non-root execution, read-only root filesystem, RuntimeDefault seccomp, disabled service-account token automount, probes, resource requests and limits, ResourceQuota, LimitRange, and least-privilege RBAC.
-- Enforce namespace isolation with Pod Security Admission and Cilium NetworkPolicies.
+- Enforce namespace isolation with Pod Security Admission, Kyverno admission policy, and Cilium NetworkPolicies.
 - Build a production-shaped GitHub Actions pipeline with separate PR validation, Terraform plan, and container-delivery workflows.
 - Run pre-commit and CI quality checks with Ruff, pytest, pip-audit, Terraform validation, TFLint, Checkov, Gitleaks, and Actionlint.
 - Build `linux/amd64` images, scan them with Trivy, retain SARIF evidence, and generate CycloneDX SBOMs.
-- Publish reviewed images to ECR using immutable tags and deploy by immutable image digest.
+- Publish reviewed images to ECR using immutable tags, sign the immutable digest with keyless Cosign, and attest the SBOM.
 - Document scanner triage, SBOM provenance discrepancies, accepted lab risk, and remediation workflows.
 - Install Falco with Helm on Kind, generate controlled runtime events, and investigate the resulting alerts.
-- Define the next delivery stages: Falco Talon response integration, Helm packaging, Argo CD GitOps reconciliation, and eventual EKS deployment.
+- Validate local GitOps delivery with Argo CD, Prometheus/Grafana observability, and Argo Rollouts before an eventual EKS deployment.
 
 ## Architecture
 
@@ -28,17 +28,19 @@ The emphasis is on learning by building: each stage is implemented, tested, docu
 Developer change
        |
        v
-GitHub Actions: test -> build -> Trivy scan -> security gate
+GitHub Actions: quality -> build -> Trivy/SBOM -> ECR digest -> Cosign
        |
        v
 Amazon ECR: versioned, immutable application image
        |
        v
-Amazon EKS: application workloads on EC2 managed nodes
+Kind now; Amazon EKS: application workloads on EC2 managed nodes
        |
        +--> Falco: runtime detection and alert investigation
 
-Later: Helm packages workloads and Falco; Argo CD reconciles declared Git state to EKS.
+Argo CD reconciles the `test` branch to Kind; a future promotion path will target
+staging and production. Prometheus/Grafana provide metrics evidence, and Argo
+Rollouts supplies the canary/rollback controller for the next exercise.
 ```
 
 ## Security scope
@@ -52,9 +54,10 @@ Kubernetes, and runtime:
 | Application quality | Ruff, pytest, pip-audit, locked dependencies | Check code quality, behavior, and Python dependency risk. |
 | Infrastructure as code | Terraform validation, TFLint, Checkov | Validate Terraform and identify insecure AWS configuration. |
 | Container security | Hardened multi-stage Dockerfile, Trivy | Reduce runtime attack surface and identify known image vulnerabilities. |
-| Artifact provenance | CycloneDX SBOM, immutable ECR tags, image digests | Record what was built and deploy the exact reviewed artifact. |
+| Artifact provenance | CycloneDX SBOM, immutable ECR tags, image digests, keyless Cosign | Record, sign, and attest what was built before deploying the exact artifact. |
 | Cloud identity | GitHub OIDC, scoped IAM roles, protected environments | Avoid long-lived AWS keys and separate plan from image-publication permissions. |
-| Kubernetes governance | RBAC, Pod Security Admission, ResourceQuota, LimitRange, seccomp, NetworkPolicies | Limit workload permissions, resources, privileges, and network reachability. |
+| Kubernetes governance | RBAC, Pod Security Admission, Kyverno, ResourceQuota, LimitRange, seccomp, NetworkPolicies | Limit workload permissions, resources, privileges, and network reachability. |
+| GitOps and observability | Argo CD, Argo Rollouts, Prometheus, Grafana | Reconcile declared state, observe service health, and prepare progressive delivery analysis. |
 | Runtime detection | Falco on Kind | Detect suspicious process and shell activity in running containers. |
 
 Trivy and Falco serve different purposes: Trivy finds known vulnerabilities before
@@ -84,6 +87,8 @@ Portfolio-lab scan policy: retain Trivy evidence in CI and document material fin
 - [x] Publish a scanned candidate image to ECR and deploy it locally by immutable digest.
 - [x] Create a separate, least-privilege OIDC role and protected `container-delivery` environment for ECR publication.
 - [x] Complete and verify the end-to-end ECR publication run from GitHub Actions; `build-6` and the commit tag resolve to the recorded ECR digest.
+- [x] Implement keyless Cosign signing and CycloneDX SBOM attestation after ECR publication, with identity-based verification and retained evidence configured in CI.
+- [ ] Merge the signing implementation to `main` and retain the first successful signing and attestation verification artifact.
 - [ ] Keep Terraform apply disabled until a separate production role and approval environment are configured.
 
 ### Stage 3 — Security validation and vulnerability remediation
@@ -104,10 +109,13 @@ Portfolio-lab scan policy: retain Trivy evidence in CI and document material fin
 
 ### Stage 5 — GitOps with Argo CD
 
-- [ ] Package the application configuration with Helm.
-- [ ] Install Argo CD and connect it to a dedicated GitOps path or repository.
-- [ ] Have CI publish artifacts and update declared image-digest state.
-- [ ] Let Argo CD reconcile that declared state to EKS.
+- [x] Install Argo CD on Kind and reconcile the `test` branch through an Argo CD Application.
+- [x] Install Prometheus/Grafana and verify the application `ServiceMonitor` reports `up = 1`.
+- [x] Install Argo Rollouts and define a staged canary strategy.
+- [ ] Add Prometheus-backed analysis to the rollout and force a failed release to demonstrate automatic abort/rollback.
+- [ ] Have CI promote a signed immutable digest by updating the intended environment branch.
+- [ ] Package the application configuration with Helm if it improves the tested manifest workflow.
+- [ ] Promote the proven GitOps path to staging and production, then reconcile it to EKS.
 
 ## Cost controls
 
@@ -148,13 +156,13 @@ Keep sanitized screenshots, workflow logs, scan reports, deployment evidence, Fa
 ├── app/                 # Application source and tests
 ├── infra/               # Terraform infrastructure
 ├── k8s/                 # Raw Kubernetes manifests during early stages
-├── helm/                # Helm charts and values (introduced later)
-├── gitops/              # Argo CD application definitions (introduced later)
+├── helm/                # Helm charts and values (optional later packaging)
+├── gitops/              # Argo CD Applications and environment overlays
 ├── docs/                # Architecture, decisions, evidence, and runbooks
 └── .github/workflows/   # CI workflows
 ```
 
-## Current status — 2026-10-27
+## Current status — 2026-10-28
 
 The project has a working local Kubernetes security baseline and a partially applied, cost-controlled AWS foundation. VPC, ECR, IAM, customer-managed KMS keys, VPC Flow Logs, remote Terraform state, and the GitHub OIDC plan identity exist. EKS, EC2 node groups, NAT Gateway, interface endpoints, ingress, and public application exposure remain disabled.
 
@@ -162,7 +170,13 @@ The active CI path is split deliberately:
 
 - **Pull request validation:** formatting, Terraform validation, TFLint, Checkov (with three documented KMS-policy model exclusions), and Gitleaks.
 - **Terraform deployment:** manually dispatched, OIDC-authenticated, remote-state **plan only**; apply is intentionally disabled.
-- **Container delivery:** a defined gated workflow runs quality checks, Gitleaks, a `linux/amd64` build, Trivy SARIF evidence, a CycloneDX SBOM, and protected ECR publication by immutable tags. The verified `build-6` and commit tags resolve to `sha256:df00c79558a2ebf82d978415686c860c2c483258d202a3cb594479eb2965f67f`.
+- **Container delivery:** a gated workflow runs quality checks, Gitleaks, a `linux/amd64` build, Trivy SARIF evidence, a CycloneDX SBOM, protected ECR publication by immutable tags, keyless Cosign signing, and SBOM attestation. The verified `build-6` and commit tags resolve to `sha256:df00c79558a2ebf82d978415686c860c2c483258d202a3cb594479eb2965f67f`; the first signing run remains to be captured after the implementation is merged to `main`.
+
+The local `test` branch is the current Kind GitOps target. Argo CD reports the
+application as `Synced` and `Healthy`; Prometheus successfully scrapes the
+application; PSA Restricted and a Kyverno runtime-hardening policy deny
+non-compliant pods. Argo Rollouts is installed for the next canary and
+automatic-rollback exercise.
 
 Local pre-commit checks, the GitHub PR workflow, the OIDC Terraform plan workflow, and the container evidence workflow have all been validated. See [the task backlog](docs/tasks.md) for remaining platform work.
 

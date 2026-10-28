@@ -22,7 +22,7 @@ This is a learning-lab threat model for the project application, CI pipeline, re
 | Exposed credential in source | Gitleaks gate and credential rotation procedure | Failing scan and remediation record |
 | Unsafe Terraform change | Checkov gate plus reviewed Terraform plan | Failing check and reviewed plan artifact |
 | Vulnerable dependency or OS package | Trivy security gate; dependency/base-image remediation | Before/after scan reports |
-| Mutable or substituted image | ECR plus deployment by immutable digest | CI log and deployed manifest |
+| Mutable or substituted image | ECR immutable tags, deployment by immutable digest, keyless Cosign signing, and CycloneDX SBOM attestation | CI publication and provenance artifacts |
 | Container runs as root | Non-root Docker user and Kubernetes `runAsNonRoot` | Dockerfile and pod security context |
 | Privileged or overly capable pod | Pod Security Admission, Kyverno policy, dropped capabilities, and no privilege escalation | Rejected workload evidence |
 | Unauthorized pod-to-pod traffic | Kubernetes NetworkPolicies | Denied connectivity test |
@@ -41,4 +41,4 @@ This is a learning-lab threat model for the project application, CI pipeline, re
 
 ## Review triggers
 
-Review this threat model when adding ingress, persistent storage, external databases, secrets, CI deployment permissions, Helm, or Argo CD.
+Review this threat model when adding ingress, persistent storage, external databases, secrets, an EKS deployment role, Helm packaging, staging/production promotion, or Kyverno signature verification.

@@ -2,7 +2,10 @@
 
 ## Purpose
 
-This project uses layered security controls. Trivy and Falco remain the first two runtime-delivery controls, while GitHub OIDC, Gitleaks, Checkov, SonarQube, CodeQL or Semgrep, Kyverno, Kubernetes RBAC, and NetworkPolicies are introduced in staged iterations described in the [DevSecOps Security Roadmap](devsecops-roadmap.md).
+This project uses layered security controls across source, CI, artifact, admission,
+network, and runtime boundaries. GitHub OIDC, Gitleaks, Checkov, Trivy, SBOMs,
+Cosign, Kubernetes RBAC, Pod Security Admission (PSA), Kyverno, NetworkPolicies,
+and Falco each address a different part of that lifecycle.
 
 SonarQube is the planned source-code quality and static-analysis control for
 pull requests. It complements Gitleaks, Checkov, and Trivy: SonarQube evaluates
@@ -17,6 +20,28 @@ This document demonstrates two complementary security practices:
 2. **Detect suspicious behavior after deployment** with Falco runtime monitoring.
 
 Neither tool replaces the other.
+
+## Kubernetes admission control: PSA and Kyverno
+
+The `secure-eks-delivery` namespace enforces the Kubernetes `restricted` PSA
+profile. A server-side dry-run of a default `nginx` pod was rejected because it
+did not set non-root execution, `allowPrivilegeEscalation: false`, dropped
+capabilities, or `RuntimeDefault` seccomp.
+
+Kyverno adds project-specific policy beyond PSA. Its namespaced
+`require-runtime-hardening` ValidatingPolicy applies to Pod creation and update
+operations and requires every container to:
+
+- disable privilege escalation;
+- use a read-only root filesystem;
+- drop `ALL` Linux capabilities; and
+- define CPU and memory requests and limits.
+
+The policy was first verified in audit mode: a PSA-compliant test Pod missing
+only `readOnlyRootFilesystem` produced a high-severity failed PolicyReport.
+It was then switched to `Deny`; the same controlled test was rejected by the
+Kyverno admission webhook. PSA supplies a portable baseline, while Kyverno
+enforces the workload-specific requirements that PSA does not express.
 
 ## Kubernetes RBAC baseline: no API access by default
 
@@ -308,9 +333,12 @@ https://token.actions.githubusercontent.com
 ```
 
 Successful verification JSON is retained as a workflow artifact. This binds a
-deployment candidate to its source workflow identity and SBOM. A later Kyverno
-`ImageValidatingPolicy` will make signature verification an admission control
-for EKS workloads after the first signed image has been independently verified.
+deployment candidate to its source workflow identity and SBOM. The signing
+implementation is committed on the `test` branch; its first successful `main`
+workflow run and retained verification evidence are still required before
+enforcing signatures in-cluster. After that evidence is captured, a Kyverno
+`ImageValidatingPolicy` can make signature verification an EKS admission
+control.
 
 ## Temporary network egress exception
 
@@ -332,6 +360,6 @@ Trivy and Falco are the first security milestone. The full DevSecOps scope is co
 1. **Vulnerability remediation:** failing Trivy result -> fix -> passing result -> successful deployment by digest.
 2. **Runtime detection:** controlled suspicious activity -> Falco alert -> documented investigation and mitigation.
 3. **Identity and pipeline protection:** GitHub OIDC trust conditions, least-privilege permissions, SHA-pinned actions, Gitleaks, and Checkov evidence.
-4. **Kubernetes prevention:** non-root/security-context controls, Pod Security Admission or Kyverno rejection evidence, RBAC review, and a denied NetworkPolicy test.
+4. **Kubernetes prevention:** non-root/security-context controls, PSA and Kyverno rejection evidence, RBAC review, and a denied NetworkPolicy test.
 5. **Cloud detection and response:** EKS audit logs plus a documented CloudTrail/GuardDuty or equivalent simulated-event investigation.
-6. **Supply-chain traceability:** SBOM and source-to-image-to-deployment evidence; signing is a later enhancement if selected.
+6. **Supply-chain traceability:** SBOM and source-to-image-to-deployment evidence, plus a verified keyless Cosign signature and attestation before signature enforcement is enabled.

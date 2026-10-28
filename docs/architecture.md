@@ -17,14 +17,16 @@ The private egress and endpoint security-group relationships are illustrated in 
 ```text
 Developer
   -> GitHub repository
-  -> GitHub Actions: test, build, Trivy scan, security gate
-  -> Amazon ECR: immutable image digest
-  -> Amazon EKS: FastAPI workload on EC2 managed nodes
+  -> GitHub Actions: quality, build, Trivy/SBOM evidence, ECR publication, Cosign
+  -> Amazon ECR: immutable image digest, signature, and SBOM attestation
+  -> Argo CD: reconcile intended environment state
+  -> Kind today; Amazon EKS: FastAPI workload on EC2 managed nodes
   -> Falco: runtime event detection and investigation
 
 Terraform provisions AWS infrastructure.
-Helm packages the application and installs Falco later.
-Argo CD reconciles declared GitOps state to EKS later.
+Argo CD currently reconciles the `test` branch to Kind.
+Prometheus/Grafana observe the local workload, and Argo Rollouts provides the
+canary controller for the next rollback exercise.
 ```
 
 ## EKS API access transition
@@ -59,7 +61,9 @@ The target design adds an SSM-managed administration host and private Systems Ma
 | --------------------- | ------------------------------------- |
 | Initial workload      | `kubectl` with reviewed raw manifests |
 | Repeatable packaging  | Helm                                  |
-| GitOps reconciliation | Argo CD                               |
+| GitOps reconciliation | Argo CD on Kind (`test` branch)       |
+| Progressive delivery | Argo Rollouts canary strategy on Kind |
+| Metrics and dashboards | Prometheus and Grafana on Kind       |
 
 Ingress, public application exposure, and HTTPS are intentionally deferred. Initial application access uses `kubectl port-forward`. The EKS API has temporary restricted public access for administration; this is separate from public application exposure.
 

@@ -108,13 +108,22 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           GIT_TAG: git-${{ github.sha }}
-          BUILD_TAG: build-${{ github.run_number }}
+          BUILD_TAG: build-${{ github.run_id }}-${{ github.run_attempt }}
         run: |
+          set -euo pipefail
           IMAGE="$ECR_REGISTRY/$ECR_REPOSITORY"
-          docker tag secure-eks-delivery:ci "$IMAGE:$GIT_TAG"
           docker tag secure-eks-delivery:ci "$IMAGE:$BUILD_TAG"
-          docker push "$IMAGE:$GIT_TAG"
           docker push "$IMAGE:$BUILD_TAG"
+
+          if aws ecr describe-images \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-ids imageTag="$GIT_TAG" \
+            --region "$AWS_REGION" > /dev/null 2>&1; then
+            echo "Immutable commit tag $GIT_TAG already exists; reusing it."
+          else
+            docker tag secure-eks-delivery:ci "$IMAGE:$GIT_TAG"
+            docker push "$IMAGE:$GIT_TAG"
+          fi
       - name: Record immutable ECR digest
         id: published-image
         env:

@@ -287,6 +287,31 @@ blocking gate. This does not remove the need for a production vulnerability
 policy; it keeps the portfolio focus on the pipeline design and separated
 identities.
 
+## Artifact signing and SBOM attestation
+
+After publication, the container-delivery workflow resolves the immutable ECR
+digest and uses Cosign keyless signing with the job's GitHub Actions OIDC token.
+No Cosign private key, passphrase, or additional GitHub secret is stored. The
+signature and CycloneDX SBOM attestation are attached to the digest in ECR, not
+to either mutable tag.
+
+The workflow verifies both artifacts against the expected workflow identity:
+
+```text
+https://github.com/alesz1296-dev/secure-eks-delivery/.github/workflows/container-delivery.yml@refs/heads/main
+```
+
+and issuer:
+
+```text
+https://token.actions.githubusercontent.com
+```
+
+Successful verification JSON is retained as a workflow artifact. This binds a
+deployment candidate to its source workflow identity and SBOM. A later Kyverno
+`ImageValidatingPolicy` will make signature verification an admission control
+for EKS workloads after the first signed image has been independently verified.
+
 ## Temporary network egress exception
 
 During the initial EKS networking phase, the cluster and worker-node security groups use unrestricted outbound traffic. This is a deliberate temporary lab decision so that EKS, image pulls, node updates, and AWS service integrations can be validated before the egress architecture is finalized.

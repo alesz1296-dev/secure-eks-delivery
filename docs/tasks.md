@@ -104,7 +104,8 @@ The ordered security program is documented in [DevSecOps Security Roadmap](devse
 - [ ] Review application authorization and test that unauthorized actions are denied.
 - [ ] Evaluate CloudTrail and GuardDuty for a controlled cloud-security exercise.
 - [ ] Record dependency provenance from source lockfile to image digest.
-- [ ] Evaluate artifact signing and verification as an optional supply-chain enhancement.
+- [ ] Verify the first keyless Cosign signing run: CI must sign the immutable ECR digest, attach the CycloneDX SBOM as an attestation, and retain successful verification evidence.
+- [ ] Add a Kyverno `ImageValidatingPolicy` after the trusted GitHub Actions certificate identity is captured from the first successful Cosign run.
 
 ## Local Kubernetes hardening follow-up
 

@@ -83,7 +83,7 @@ Portfolio-lab scan policy: retain Trivy evidence in CI and document material fin
 - [x] Authenticate the Terraform plan workflow to AWS through GitHub OIDC; no long-lived AWS key is stored in GitHub.
 - [x] Publish a scanned candidate image to ECR and deploy it locally by immutable digest.
 - [x] Create a separate, least-privilege OIDC role and protected `container-delivery` environment for ECR publication.
-- [ ] Complete and verify the end-to-end ECR publication run from GitHub Actions.
+- [x] Complete and verify the end-to-end ECR publication run from GitHub Actions; `build-6` and the commit tag resolve to the recorded ECR digest.
 - [ ] Keep Terraform apply disabled until a separate production role and approval environment are configured.
 
 ### Stage 3 — Security validation and vulnerability remediation
@@ -162,7 +162,7 @@ The active CI path is split deliberately:
 
 - **Pull request validation:** formatting, Terraform validation, TFLint, Checkov (with three documented KMS-policy model exclusions), and Gitleaks.
 - **Terraform deployment:** manually dispatched, OIDC-authenticated, remote-state **plan only**; apply is intentionally disabled.
-- **Container delivery:** a defined gated workflow runs quality checks, Gitleaks, `linux/amd64` build, Trivy SARIF evidence, a CycloneDX SBOM, and—after protected-environment approval—ECR publication by immutable tags. The publisher IAM role is applied; the GitHub environment configuration and successful publication run remain to be verified.
+- **Container delivery:** a defined gated workflow runs quality checks, Gitleaks, a `linux/amd64` build, Trivy SARIF evidence, a CycloneDX SBOM, and protected ECR publication by immutable tags. The verified `build-6` and commit tags resolve to `sha256:df00c79558a2ebf82d978415686c860c2c483258d202a3cb594479eb2965f67f`.
 
 Local pre-commit checks, the GitHub PR workflow, the OIDC Terraform plan workflow, and the container evidence workflow have all been validated. See [the task backlog](docs/tasks.md) for remaining platform work.
 

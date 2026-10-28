@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: secure-eks-delivery-kind
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: secure-eks-delivery
+    app.kubernetes.io/part-of: secure-eks-delivery
+    app.kubernetes.io/component: gitops
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/alesz1296-dev/secure-eks-delivery.git
+    # This branch is the local continuous-delivery validation environment.
+    # Change to main after the deployment model is merged and approved.
+    targetRevision: test
+    path: kubernetes/overlays/kind
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: secure-eks-delivery
+  ignoreDifferences:
+    # The Rollout controller scales the referenced Deployment during migration.
+    - group: apps
+      kind: Deployment
+      name: secure-eks-delivery
+      namespace: secure-eks-delivery
+      jsonPointers:
+        - /spec/replicas
+  revisionHistoryLimit: 5
+  syncPolicy:
+    syncOptions:
+      # Apply the ignore rule as well as using it for the diff view.
+      - RespectIgnoreDifferences=true
+    automated:
+      # Keep deletion manual until GitOps pruning has been rehearsed safely.
+      prune: false
+      selfHeal: true

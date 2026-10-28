@@ -58,7 +58,7 @@ namespace quota does **not** include PVC or storage limits. Storage quotas will
 be added only after the project defines a persistence requirement and its RPO,
 RTO, backup, and capacity expectations.
 
-The current Deployment requests `50m` CPU and `64Mi` memory, with limits of
+The current Deployment requests `100m` CPU and `64Mi` memory, with limits of
 `250m` CPU and `256Mi` memory. The proposed namespace baseline uses those
 values as the per-container defaults and leaves controlled headroom for future
 replicas:
@@ -101,7 +101,7 @@ spec:
   limits:
     - type: Container
       defaultRequest:
-        cpu: 50m
+        cpu: 100m
         memory: 64Mi
       default:
         cpu: 250m

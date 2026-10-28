@@ -27,6 +27,33 @@ TFLint baseline and the current workflow YAML passes actionlint. They do not
 yet prove that GitHub Actions can authenticate to AWS, execute a remote plan,
 or perform an approved apply.
 
+## Terraform backend boundary
+
+The pull-request validation workflow initializes Terraform with:
+
+```text
+terraform init -backend=false -input=false
+```
+
+This job performs static configuration and security checks only. It does not
+receive AWS credentials and must not read or lock the remote S3 state. The
+backend is therefore disabled deliberately to keep untrusted pull-request code
+away from cloud state.
+
+The trusted, manually dispatched Terraform deployment workflow authenticates
+through the restricted GitHub OIDC plan role before running:
+
+```text
+terraform init -input=false
+terraform plan -input=false -var-file=terraform.tfvars.example -out=tfplan
+```
+
+That workflow is the only validation path that reads remote state and uploads
+the plan artifact. This distinction was confirmed during end-to-end testing:
+the PR job initially failed because plain `terraform init` attempted to access
+S3 without credentials; changing it to `-backend=false` restored the intended
+security boundary.
+
 All third-party actions in the active workflows are referenced by full commit
 SHA, with the human-readable release tag retained in a comment. This prevents
 a mutable action tag from silently changing the code executed by CI.
@@ -117,3 +144,5 @@ Before dispatching the workflow, apply the Terraform role and configure these **
 | `ECR_REPOSITORY` | Terraform output `ecr_repository_name` |
 
 The environment should restrict deployments to `main` and require approval if the repository plan supports it. Its OIDC subject must match the value supplied to `github_container_delivery_oidc_subject`; inspect an Actions token first if the repository uses customized OIDC subject claims.
+
+Current status: the ECR publisher role and protected environment are configured, and the first successful publication has been verified. The immutable `build-6` and `git-69cfec2b320f58b4be612fafb568533270979269` tags resolve to `sha256:df00c79558a2ebf82d978415686c860c2c483258d202a3cb594479eb2965f67f` in `secure-eks-delivery-dev-fastapi`.
